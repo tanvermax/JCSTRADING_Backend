@@ -11,9 +11,15 @@ import { Role } from '../user/user.interface';
 const router = Router();
 
 
-router.post("/create-product", multerUpload.single("file"), validateRequest(CreateProductZodSchema), ProductController.creatProduct);
+router.post("/create-product",
+    multerUpload.single("file"),
+    validateRequest(CreateProductZodSchema),
+    ProductController.creatProduct);
+
+
+
 router.get("/", ProductController.getAllProduct);
-router.patch('/:id',multerUpload.single("file"), ProductController.updateProduct)
+router.patch('/:id', multerUpload.single("file"), ProductController.updateProduct)
 router.delete("/:id", cheakAuth(Role.ADMIN), ProductController.deleteProduct);
 
 

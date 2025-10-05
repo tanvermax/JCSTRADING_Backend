@@ -8,8 +8,8 @@ import { deleteImageForCloudinary } from '../../config/cloudinary.config';
 
 
 const createProduct = async (payload: IProduct) => {
-    const ISProductExit = await Product.findOne({ name: payload.title });
-
+    const ISProductExit = await Product.findOne({ title: payload.title });
+    console.log(ISProductExit)
     if (ISProductExit) {
         throw new AppError(httpStatus.BAD_REQUEST, "Product alredy exit in")
     }
@@ -72,7 +72,7 @@ const updateproduct = async (id: string, payload: Partial<IProduct>) => {
         payload.slug = slug
     }
     const newProduct = await Product.findByIdAndUpdate(id, payload, { new: true, runValidators: true })
-      if (payload.images && ifProduct.images) {
+    if (payload.images && ifProduct.images) {
         await deleteImageForCloudinary(ifProduct.images)
     }
     return newProduct
@@ -88,5 +88,5 @@ const deleteProduct = async (id: string) => {
 
 
 export const productService = {
-    createProduct, deleteProduct, getAllProduct,updateproduct
+    createProduct, deleteProduct, getAllProduct, updateproduct
 }

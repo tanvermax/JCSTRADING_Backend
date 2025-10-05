@@ -1,4 +1,5 @@
 import { Response } from "express"
+import { envVarse } from "../config/env"
 
 
 
@@ -7,21 +8,38 @@ export interface AuthToken {
     refreshToken?: string
 }
 
+// export const setAuthCookie = (res: Response, tokenInfo: AuthToken) => {
+//     if (tokenInfo.accessToken) {
+//         res.cookie("accessToken", tokenInfo.accessToken, {
+//             httpOnly: true,
+//             secure: true,
+//             sameSite:"none"
+//         })
+//     }
+//     if (tokenInfo.refreshToken) {
+//         res.cookie("refreshToken", tokenInfo.refreshToken, {
+//             httpOnly: true,
+//             secure: true,
+//             sameSite:"none"
+
+//         })
+
+//     }
+// }
+
 export const setAuthCookie = (res: Response, tokenInfo: AuthToken) => {
-    if (tokenInfo.accessToken) {
-        res.cookie("accessToken", tokenInfo.accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite:"none"
-        })
-    }
-    if (tokenInfo.refreshToken) {
-        res.cookie("refreshToken", tokenInfo.refreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite:"none"
-
-        })
-
-    }
+  if (tokenInfo.accessToken) {
+    res.cookie('accessToken', tokenInfo.accessToken, {
+      httpOnly: true,
+      secure: envVarse.NODE_ENV === 'production',
+     sameSite: envVarse.NODE_ENV === 'development' ? 'lax' : 'none',
+    })
+  }
+  if (tokenInfo.refreshToken) {
+    res.cookie('refreshToken', tokenInfo.refreshToken, {
+      httpOnly: true,
+      secure: envVarse.NODE_ENV === 'production',
+      sameSite: envVarse.NODE_ENV === 'development' ? 'lax' : 'none',
+    })
+  }
 }

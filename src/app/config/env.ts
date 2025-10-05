@@ -6,7 +6,7 @@ dotenv.config();
 interface EnvConfig {
     PORT: number,
     DB_URL: string,
-    NODE_ENV: "devolopment" | "production",
+    NODE_ENV: "development" | "production",
     JWT_ACCES_SECRET: string,
     JWT_ACCES_EXPIRE: string,
     BCRYPT_SALT_ROUNDE: string,
@@ -71,7 +71,7 @@ const loadEnvVariables = (): EnvConfig => {
         PORT: Number(process.env.PORT),
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         DB_URL: process.env.DB_URL!,
-        NODE_ENV: process.env.NODE_ENV as "devolopment",
+        NODE_ENV: process.env.NODE_ENV as "development",
         BCRYPT_SALT_ROUNDE: process.env.BCRYPT_SALT_ROUNDE as string,
         JWT_ACCES_EXPIRE: process.env.JWT_ACCES_EXPIRE as string,
         JWT_ACCES_SECRET: process.env.JWT_ACCES_SECRET as string,

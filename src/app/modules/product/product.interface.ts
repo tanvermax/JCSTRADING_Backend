@@ -3,12 +3,12 @@ export interface IProduct {
     _id?: string; // unique product ID (UUID or DB ObjectId)
     title: string;
     description: string;
-    price: number;
-    stock: number;
+    price?: number;
+    stock?: number;
     category: string;
     slug: string,
     newproduct:boolean,
-    images: string;
+    images?: string;
     brand?: string; // optional
     sku?: string;   // stock keeping unit
     tags?: string[];

@@ -4,18 +4,29 @@ import { Request, Response, NextFunction } from "express";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendresponse";
 import { IProduct } from "./product.interface";
+import AppError from '../../errorHelper/AppError';
+import { deleteImageForCloudinary } from '../../config/cloudinary.config';
 
 
 
 const creatProduct = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
+    console.log(req.body)
+    if (!req.file?.path) {
+        throw new AppError(400, "Image upload failed");
+    }
     const payload: IProduct = {
         ...req.body,
-        images: req.file?.path
+        images: req.file?.path || null
     }
 
-    const product = await productService.createProduct(payload);
 
+    const product = await productService.createProduct(payload);
+    console.log("product", product)
+    if (!product) {
+        // Clean up Cloudinary file if DB operation failed
+        await deleteImageForCloudinary(req.file?.path);
+    }
     sendResponse(res, {
 
         statusCode: 201,
