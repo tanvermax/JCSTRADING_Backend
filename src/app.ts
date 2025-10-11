@@ -14,9 +14,20 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use(cookieParser())
 app.use(cors({
-  origin: ["http://localhost:3000","https://jcstrading-backend-ivvm.vercel.app"],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
+  origin: ["http://localhost:3000",
+    "https://localhost:3000",
+    "www.jcstradingbd.com",
+    "https://jcstradingbd.vercel.app",
+    "https://jcstrading.vercel.app"],
+  methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
+  credentials: true,
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin'
+  ]
 }))
 app.use("/api/v1", router)
 
