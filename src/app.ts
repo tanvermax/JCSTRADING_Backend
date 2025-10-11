@@ -17,7 +17,7 @@ app.use(cors({
   origin: ["http://localhost:3000",
     "https://localhost:3000",
     "www.jcstradingbd.com",
-    "https://jcstradingbd.vercel.app",
+   
     "https://jcstrading.vercel.app"],
   methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
   credentials: true,
@@ -27,8 +27,16 @@ app.use(cors({
     'X-Requested-With',
     'Accept',
     'Origin'
-  ]
+  ],
+  exposedHeaders: [
+    'Authorization',
+    'Access-Control-Allow-Origin'
+  ],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+
 }))
+
 app.use("/api/v1", router)
 
 app.get("/", (req: Request, res: Response) => {
