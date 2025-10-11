@@ -17,8 +17,9 @@ app.use(cors({
   origin: [
     "https://jcstrading.vercel.app",
     "http://localhost:3000"
-    ],
-    credentials:true
+  ],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }))
 
 app.use("/api/v1", router)
