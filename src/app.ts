@@ -14,27 +14,13 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use(cookieParser())
 app.use(cors({
-  origin: ["http://localhost:3000",
+  origin: [
+    "https://jcstrading.vercel.app",
+    "http://localhost:3000",
     "https://localhost:3000",
     "www.jcstradingbd.com",
-   
-    "https://jcstrading.vercel.app"],
-  methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
-  credentials: true,
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'Accept',
-    'Origin'
-  ],
-  exposedHeaders: [
-    'Authorization',
-    'Access-Control-Allow-Origin'
-  ],
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-
+    ],
+    credentials:true
 }))
 
 app.use("/api/v1", router)
