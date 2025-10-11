@@ -79,8 +79,8 @@ const globalErrorHandler = (err, req, res, next) => __awaiter(void 0, void 0, vo
         success: false,
         message,
         errorSources,
-        err: env_1.envVarse.NODE_ENV === "devolopment" ? err : null,
-        stack: env_1.envVarse.NODE_ENV === "devolopment" ? err.stack : null
+        err: env_1.envVarse.NODE_ENV === "development" ? err : null,
+        stack: env_1.envVarse.NODE_ENV === "development" ? err.stack : null
     });
 });
 exports.globalErrorHandler = globalErrorHandler;

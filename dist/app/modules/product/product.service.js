@@ -19,7 +19,8 @@ const AppError_1 = __importDefault(require("../../errorHelper/AppError"));
 const product_model_1 = require("./product.model");
 const cloudinary_config_1 = require("../../config/cloudinary.config");
 const createProduct = (payload) => __awaiter(void 0, void 0, void 0, function* () {
-    const ISProductExit = yield product_model_1.Product.findOne({ name: payload.title });
+    const ISProductExit = yield product_model_1.Product.findOne({ title: payload.title });
+    console.log(ISProductExit);
     if (ISProductExit) {
         throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Product alredy exit in");
     }

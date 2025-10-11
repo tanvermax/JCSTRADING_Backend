@@ -13,8 +13,26 @@ exports.validateRequest = void 0;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const validateRequest = (ZodSchema) => (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        req.body = JSON.parse(req.body.data) || req.body;
-        req.body = yield ZodSchema.parseAsync(req.body);
+        // console.log("===== Before Parsing =====");
+        // console.log("req.body:", req.body);
+        // console.log("req.file:", req.file);
+        // console.log("==========================");
+        // req.body =JSON.parse(req.body.data || {}) || req.body
+        if (req.body && req.body.data) {
+            try {
+                req.body = JSON.parse(req.body.data);
+            }
+            catch (parseError) {
+                console.error("Failed to parse req.body.data:", parseError);
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid JSON in form data",
+                    errorSources: [],
+                });
+            }
+        }
+        // Validate with Zod
+        req.body = yield ZodSchema.parseAsync(req.body || {});
         next();
     }
     catch (error) {
