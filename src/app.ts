@@ -16,7 +16,7 @@ app.use(cors({
   origin: [
     "https://jcstrading.vercel.app",
     "http://localhost:3000",
-    "https://jcstradingbd.com"
+    "www.jcstradingbd.com"
   ],
   credentials: true,
   
