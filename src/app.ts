@@ -21,7 +21,7 @@ app.use(cors({
 }));
 
 
-app.options("*", cors());
+app.options("/", cors());
 app.use(cookieParser())
 
 
@@ -29,7 +29,7 @@ app.use("/api/v1", router)
 
 app.get("/", (req: Request, res: Response) => {
   res.status(200).json({
-    message: "Welcome to PH BACKEND Database backend system"
+    message: "Welcome to jcs trading Database backend system"
   })
 })
 app.use(notFounde)
