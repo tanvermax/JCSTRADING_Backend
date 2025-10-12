@@ -15,7 +15,8 @@ app.use(express.urlencoded({ extended: true }))
 app.use(cors({
   origin: [
     "https://jcstrading.vercel.app",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "https://jcstradingbd.com"
   ],
   credentials: true,
   

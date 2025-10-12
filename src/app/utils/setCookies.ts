@@ -37,7 +37,7 @@ export const setAuthCookie = (res: Response, tokenInfo: AuthToken) => {
   if (tokenInfo.refreshToken) {
     res.cookie('refreshToken', tokenInfo.refreshToken, {
       httpOnly: true,
-     secure: true,
+      secure: true,
       sameSite: "none",
     })
   }
