@@ -3,8 +3,8 @@ import { z } from "zod";
 export const CreateProductZodSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters long"),
   description: z.string().min(4, "Description must be at least 4 characters long"),
-  price: z.string().optional(),
-  stock: z.string().optional(),
+  price: z.number().optional(),
+  stock: z.number().optional(),
   category: z.string().min(2, "Category is required").optional(),
   slug: z.string().regex(/^[a-z0-9-]+$/, "Slug must be URL-friendly").optional(),
   newproduct: z.boolean().optional(),

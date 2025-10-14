@@ -5,8 +5,8 @@ const zod_1 = require("zod");
 exports.CreateProductZodSchema = zod_1.z.object({
     title: zod_1.z.string().min(3, "Title must be at least 3 characters long"),
     description: zod_1.z.string().min(4, "Description must be at least 4 characters long"),
-    price: zod_1.z.string().optional(),
-    stock: zod_1.z.string().optional(),
+    price: zod_1.z.number().optional(),
+    stock: zod_1.z.number().optional(),
     category: zod_1.z.string().min(2, "Category is required").optional(),
     slug: zod_1.z.string().regex(/^[a-z0-9-]+$/, "Slug must be URL-friendly").optional(),
     newproduct: zod_1.z.boolean().optional(),
