@@ -5,6 +5,9 @@ import AppError from "../../errorHelper/AppError";
 import { IProduct } from "./product.interface";
 import { Product } from "./product.model";
 import { deleteImageForCloudinary } from '../../config/cloudinary.config';
+import { OrderModel } from '../order/order.model';
+import { Types } from 'mongoose';
+
 
 
 const createProduct = async (payload: IProduct) => {
@@ -84,9 +87,61 @@ const deleteProduct = async (id: string) => {
     return null;
 }
 
+const getproductDetails = async (id: string) => {
+    const product = await Product.findById(id);
+    console.log("product",product)
+    return {
+        data: product
+    };
+}
+
+const createOrderIntoDB = async (payload: { productId: string; quantity: number}) => {
+
+const { productId, quantity } = payload;
+
+  // 1. Find the product
+
+  console.log("product",productId)
+  console.log("quantity",quantity)
+  
+  const product = await Product.findById(new Types.ObjectId(productId));
+
+  if (!product) {
+    throw new Error('Product not found');
+  }
+  if (!product.stock) {
+    throw new Error('stock not found');
+  }
+  if (!product.price) {
+    throw new Error('price not found');
+  }
+
+  // 2. Check if enough stock exists
+  if (product.stock < quantity) {
+    throw new Error('Insufficient stock! Only ' + product.stock + ' items left.');
+  }
+
+ // 3. Calculate total (Price from DB * quantity from Frontend)
+  const totalPrice = product.price * quantity;
+
+  // 4. Create the Order record
+  const result = await OrderModel.create({
+    product: productId,
+    quantity,
+    totalPrice,
+    status: 'Pending',
+  });
+
+  // 5. Update the Product stock
+  await Product.findByIdAndUpdate(productId, {
+    $inc: { stock: -quantity },
+  });
+
+  return result;
+};
 
 
 
 export const productService = {
-    createProduct, deleteProduct, getAllProduct, updateproduct
+    createProduct, deleteProduct, createOrderIntoDB, getAllProduct, updateproduct, getproductDetails
 }

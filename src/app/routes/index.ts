@@ -6,6 +6,7 @@ import { AgentRouter } from "../modules/agent/agent.route";
 import { AdminRouter } from "../modules/admin/admin.routs";
 import { ProductRoute } from "../modules/product/product.route";
 import { OtpRouter } from "../modules/otp/otp.routs";
+import { SkuRouter } from "../modules/sku/sku.route";
 
 export const router = Router();
 
@@ -37,6 +38,10 @@ const moduleRoutes = [
     {
         path:"/otp",
         route:OtpRouter
+    },
+    {
+        path:"/sku",
+        route:SkuRouter
     }
 ]
 

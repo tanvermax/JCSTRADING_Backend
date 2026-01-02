@@ -80,6 +80,37 @@ const deleteProduct = catchAsync(async (req: Request, res: Response, next: NextF
     })
 })
 
+const getproductdetails = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const product = await productService.getproductDetails(req.params.id)
+
+    console.log("product", product)
+
+    sendResponse(res, {
+        statusCode: 201,
+        message: "product Details Retrive successfully",
+        success: true,
+        data: product,
+    })
+})
+
+const order = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+
+    const result = await productService.createOrderIntoDB(req.body);
+
+    // console.log("product",cart)
+
+    sendResponse(res, {
+        statusCode: 201,
+        message: "Order placed successfully",
+        success: true,
+        data: result,
+    })
+})
+
+
+
 export const ProductController = {
-    creatProduct, deleteProduct, getAllProduct, updateProduct
+    creatProduct, order,
+    deleteProduct, getAllProduct,
+    updateProduct, getproductdetails
 }

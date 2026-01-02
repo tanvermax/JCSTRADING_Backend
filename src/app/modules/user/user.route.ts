@@ -20,8 +20,5 @@ router.post("/register",
  userController.createUser);
 router.get("/me", cheakAuth(...Object.values(Role)), userController.getMe)
 
-// router.post("/sendmoney",cheakAuth(Role.USER),userController.sendmoney);
-// router.post("/withdraw",cheakAuth(Role.USER),userController.userwithdrawmoney);
-// router.get('/history',cheakAuth(Role.USER),  transactionController.getHistory);
 
 export const UserRoutes = router;
