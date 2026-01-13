@@ -6,7 +6,7 @@ import { IProduct } from "./product.interface";
 import { Product } from "./product.model";
 import { deleteImageForCloudinary } from '../../config/cloudinary.config';
 import { OrderModel } from '../order/order.model';
-import { Types } from 'mongoose';
+
 
 
 
@@ -30,12 +30,11 @@ const createProduct = async (payload: IProduct) => {
     return product
 }
 
-
 const getAllProduct = async (query: Record<string, string>) => {
     const filter = query
-    console.log(filter)
+    // console.log("filter",filter)
     const product = await Product.find(filter);
-
+    // console.log(product)
     const totalProduct = await Product.countDocuments();
 
     return {
@@ -45,7 +44,6 @@ const getAllProduct = async (query: Record<string, string>) => {
         }
     }
 }
-
 
 const updateproduct = async (id: string, payload: Partial<IProduct>) => {
 
@@ -88,60 +86,60 @@ const deleteProduct = async (id: string) => {
 }
 
 const getproductDetails = async (id: string) => {
-    const product = await Product.findById(id);
-    console.log("product",product)
+    console.log(id)
+
+    const product = await Product.findById({ _id: id.trim() });
     return {
         data: product
     };
 }
 
-const createOrderIntoDB = async (payload: { productId: string; quantity: number}) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const addToCartIntoDB = async (payload: { productId: string; quantity: number },userId:string) => {
+    const { productId, quantity,  } = payload;
+    
+    console.log("productId, quantity, userId", productId, quantity,userId)
 
-const { productId, quantity } = payload;
 
-  // 1. Find the product
+    const product = await Product.findById(productId);
 
-  console.log("product",productId)
-  console.log("quantity",quantity)
-  
-  const product = await Product.findById(new Types.ObjectId(productId));
+    if (!product || !product.stock || product.stock == null) throw new Error('Stock issue');
+    if (!product.price) throw new Error('price issue');
 
-  if (!product) {
-    throw new Error('Product not found');
-  }
-  if (!product.stock) {
-    throw new Error('stock not found');
-  }
-  if (!product.price) {
-    throw new Error('price not found');
-  }
+    if (!product || product.stock < quantity) throw new Error('Stock issue');
 
-  // 2. Check if enough stock exists
-  if (product.stock < quantity) {
-    throw new Error('Insufficient stock! Only ' + product.stock + ' items left.');
-  }
+    // 1. Find if the user already has a "Pending" order (their Cart)
+    // eslint-disable-next-line prefer-const
+    let cart = await OrderModel.findOne({ userId:userId, status: 'Pending' });
 
- // 3. Calculate total (Price from DB * quantity from Frontend)
-  const totalPrice = product.price * quantity;
+    if (!cart) {
+        // 2. No cart? Create one with this item
+        return await OrderModel.create({
+            userId:userId,
+            orderedItems: [{ product: productId, quantity, price: product.price }],
+            totalPrice: product.price * quantity,
+            status: 'Pending',
+        });
+    }
 
-  // 4. Create the Order record
-  const result = await OrderModel.create({
-    product: productId,
-    quantity,
-    totalPrice,
-    status: 'Pending',
-  });
+    // 3. Cart exists? Check if product is already in the array
+    const itemIndex = cart.orderedItems.findIndex(item => item.product.toString() === productId);
 
-  // 5. Update the Product stock
-  await Product.findByIdAndUpdate(productId, {
-    $inc: { stock: -quantity },
-  });
+    if (itemIndex > -1) {
+        // Increase quantity of existing item
+        cart.orderedItems[itemIndex].quantity += quantity;
+    } else {
+        // Add new item to the array
+        cart.orderedItems.push({ product: productId, quantity, price: product.price });
+    }
 
-  return result;
+    // 4. Recalculate Total
+    cart.totalPrice = cart.orderedItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+
+    return await cart.save();
 };
 
 
-
 export const productService = {
-    createProduct, deleteProduct, createOrderIntoDB, getAllProduct, updateproduct, getproductDetails
+    createProduct, deleteProduct, addToCartIntoDB, getAllProduct, updateproduct, getproductDetails
 }

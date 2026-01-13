@@ -18,6 +18,7 @@ router.get("/", ProductController.getAllProduct);
 router.patch('/:id', multerUpload.single("file"), ProductController.updateProduct)
 router.delete("/:id", cheakAuth(Role.ADMIN), ProductController.deleteProduct);
 
-router.post("/order",ProductController.order)
+router.post("/order",cheakAuth(...Object.values(Role)),ProductController.order)
+
 
 export const ProductRoute = router

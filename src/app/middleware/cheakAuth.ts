@@ -13,7 +13,7 @@ export const cheakAuth = (...authRoles: string[]) => async (req: Request, res: R
 
         const accesToken = req.headers.authorization || req.cookies.accessToken;
         
-        console.log("accesToken found in cheakauth",accesToken)
+        // console.log("accesToken found in cheakauth",accesToken)
         // console.log(accesToken)
         if (!accesToken) {
             throw new AppError(403, "no Token found")

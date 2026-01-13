@@ -1,3 +1,4 @@
+import { OrderRoute } from './../modules/order/OrderCart.route';
 import { Router } from "express"
 import { AuthRoute } from "../modules/auth/auth.routs";
 import { UserRoutes } from "../modules/user/user.route";
@@ -36,12 +37,16 @@ const moduleRoutes = [
         route: ProductRoute
     },
     {
-        path:"/otp",
-        route:OtpRouter
+        path: "/otp",
+        route: OtpRouter
     },
     {
-        path:"/sku",
-        route:SkuRouter
+        path: "/sku",
+        route: SkuRouter
+    },
+    {
+        path: "/order",
+        route:OrderRoute
     }
 ]
 

@@ -6,6 +6,8 @@ import { sendResponse } from "../../utils/sendresponse";
 import { IProduct } from "./product.interface";
 import AppError from '../../errorHelper/AppError';
 import { deleteImageForCloudinary } from '../../config/cloudinary.config';
+import { JwtPayload } from 'jsonwebtoken';
+import { userService } from '../user/user.service';
 
 
 
@@ -38,7 +40,7 @@ const creatProduct = catchAsync(async (req: Request, res: Response, next: NextFu
 
 const getAllProduct = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const query = req.query;
-    console.log("query from controller", query)
+    // console.log("query from controller", query)
     const result = await productService.getAllProduct(query as Record<string, string>);
 
 
@@ -83,7 +85,7 @@ const deleteProduct = catchAsync(async (req: Request, res: Response, next: NextF
 const getproductdetails = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const product = await productService.getproductDetails(req.params.id)
 
-    console.log("product", product)
+    // console.log("product 86", req.params.id)
 
     sendResponse(res, {
         statusCode: 201,
@@ -94,8 +96,12 @@ const getproductdetails = catchAsync(async (req: Request, res: Response, next: N
 })
 
 const order = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const decodedToken = req.user as JwtPayload
 
-    const result = await productService.createOrderIntoDB(req.body);
+
+    // console.log("userresult", decodedToken.userId)
+
+    const result = await productService.addToCartIntoDB(req.body, decodedToken.userId);
 
     // console.log("product",cart)
 

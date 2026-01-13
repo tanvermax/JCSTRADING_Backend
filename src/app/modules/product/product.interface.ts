@@ -1,6 +1,7 @@
+import { Types } from "mongoose";
 
 export interface IProduct {
-    _id?: string; // unique product ID (UUID or DB ObjectId)
+    _id?: Types.ObjectId | string; 
     title: string;
     description: string;
     price?: number;
@@ -9,10 +10,10 @@ export interface IProduct {
     slug: string,
     newproduct:boolean,
     images?: string;
-    brand?: string; // optional
-    sku?: string;   // stock keeping unit
+    brand?: string; 
+    sku?: string;  
     tags?: string[];
     createdAt: Date;
     updatedAt: Date;
-    isActive: boolean; // to mark product availability
+    isActive: boolean; 
 }

@@ -4,16 +4,14 @@ export type TOrderStatus = 'Pending' | 'Paid' | 'Shipped' | 'Completed' | 'Cance
 export type TPaymentStatus = 'Pending' | 'Success' | 'Failed';
 
 export interface TOrderItem {
-    email: string; // Identify the buyer
-    product: Types.ObjectId;
+    product: Types.ObjectId | string;
     quantity: number;
     price: number;
-    totalPrice: number;
-    status: 'Pending' | 'Paid' | 'Cancelled';
 }
 
 export interface TOrder {
-    user: Types.ObjectId;
+   userId?: string; // Optional for Guest Checkout
+    email: string;        // Moved from TOrderItem to here
     orderedItems: TOrderItem[];
     totalPrice: number;
     status: TOrderStatus;
