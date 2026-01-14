@@ -22,7 +22,7 @@ const user_model_1 = require("../modules/user/user.model");
 const cheakAuth = (...authRoles) => (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const accesToken = req.headers.authorization || req.cookies.accessToken;
-        console.log("accesToken found in cheakauth", accesToken);
+        // console.log("accesToken found in cheakauth",accesToken)
         // console.log(accesToken)
         if (!accesToken) {
             throw new AppError_1.default(403, "no Token found");

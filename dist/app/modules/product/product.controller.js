@@ -40,7 +40,7 @@ const creatProduct = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(
 }));
 const getAllProduct = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const query = req.query;
-    console.log("query from controller", query);
+    // console.log("query from controller", query)
     const result = yield product_service_1.productService.getAllProduct(query);
     (0, sendresponse_1.sendResponse)(res, {
         statusCode: 201,
@@ -71,6 +71,30 @@ const deleteProduct = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter
         data: product,
     });
 }));
+const getproductdetails = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const product = yield product_service_1.productService.getproductDetails(req.params.id);
+    // console.log("product 86", req.params.id)
+    (0, sendresponse_1.sendResponse)(res, {
+        statusCode: 201,
+        message: "product Details Retrive successfully",
+        success: true,
+        data: product,
+    });
+}));
+const order = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const decodedToken = req.user;
+    // console.log("userresult", decodedToken.userId)
+    const result = yield product_service_1.productService.addToCartIntoDB(req.body, decodedToken.userId);
+    // console.log("product",cart)
+    (0, sendresponse_1.sendResponse)(res, {
+        statusCode: 201,
+        message: "Order placed successfully",
+        success: true,
+        data: result,
+    });
+}));
 exports.ProductController = {
-    creatProduct, deleteProduct, getAllProduct, updateProduct
+    creatProduct, order,
+    deleteProduct, getAllProduct,
+    updateProduct, getproductdetails
 };

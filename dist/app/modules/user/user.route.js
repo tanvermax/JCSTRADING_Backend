@@ -16,7 +16,4 @@ router.post("/register",
 //  validateRequest(createUserZodSchema)
 user_controller_1.userController.createUser);
 router.get("/me", (0, cheakAuth_1.cheakAuth)(...Object.values(user_interface_1.Role)), user_controller_1.userController.getMe);
-// router.post("/sendmoney",cheakAuth(Role.USER),userController.sendmoney);
-// router.post("/withdraw",cheakAuth(Role.USER),userController.userwithdrawmoney);
-// router.get('/history',cheakAuth(Role.USER),  transactionController.getHistory);
 exports.UserRoutes = router;
