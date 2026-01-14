@@ -10,6 +10,7 @@ const router = Router();
 
 
 router.get("/",cheakAuth(...Object.values(Role)), OrderController.getAllOrder)
-
+router.patch("/:id",cheakAuth(...Object.values(Role)),OrderController.updateOrderStatus)
+router.patch("/orderconfirm/:id",cheakAuth(...Object.values(Role)),OrderController.confirmOrder)
 
 export const OrderRoute = router

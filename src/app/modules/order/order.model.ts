@@ -22,11 +22,16 @@ const orderSchema = new Schema<TOrder>({
     enum: ['Pending', 'Success', 'Failed'],
     default: 'Pending'
   },
+  grandTotal: { type: Number },
   transactionId: { type: String },
   shippingAddress: {
-    city: { type: String,  },
-    address: { type: String},
-    phone: { type: String}
+    name: { type: String },
+    phone: { type: Number },
+    address: { type: String },
+    shippingArea: {
+      type: String,
+      enum: ['inside', 'outside']
+    }
   }
 }, {
   timestamps: true

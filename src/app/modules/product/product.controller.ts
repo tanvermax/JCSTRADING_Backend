@@ -57,11 +57,14 @@ const getAllProduct = catchAsync(async (req: Request, res: Response, next: NextF
 const updateProduct = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
     const id = req.params.id;
+
     const payload: IProduct = {
         ...req.body,
         images: req.file?.path
     }
-    const divison = await productService.updateproduct(id, payload)
+
+    const divison = await productService.updateproduct(id, payload);
+    
     sendResponse(res, {
         statusCode: 201,
         message: "product updated successfully",

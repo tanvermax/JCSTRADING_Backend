@@ -11,15 +11,17 @@ export interface TOrderItem {
 
 export interface TOrder {
    userId?: string; // Optional for Guest Checkout
-    email: string;        // Moved from TOrderItem to here
+    email: string;   
+    grandTotal?:number     // Moved from TOrderItem to here
     orderedItems: TOrderItem[];
     totalPrice: number;
     status: TOrderStatus;
     paymentStatus: TPaymentStatus;
     transactionId?: string;
     shippingAddress: {
-        city: string;
+        name:string
         address: string;
-        phone: string;
+        phone: number;
+        shippingArea:string
     };
 }
