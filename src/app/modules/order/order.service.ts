@@ -10,7 +10,7 @@ const getAllOrder = async (query: Record<string, string>, userId: string) => {
     }
     // console.log("filter",filter)
     const Order = await OrderModel.find(filter).populate('orderedItems.product');
-    
+
     const totalProduct = await OrderModel.countDocuments();
 
     return {
@@ -64,7 +64,7 @@ const updateOrder = async (orderId: string, quantity: number, productId: string)
 }
 
 
-const ConfirmOrder = async (orderId: string, updatedData: { name: string, phone: number, address: string, shippingArea: string, grandTotal: number,status:string }) => {
+const ConfirmOrder = async (orderId: string, updatedData: { name: string, phone: number, address: string, shippingArea: string, grandTotal: number, status: string }) => {
 
     const {
         name,
@@ -72,34 +72,56 @@ const ConfirmOrder = async (orderId: string, updatedData: { name: string, phone:
         address,
         shippingArea,
         grandTotal,
-        
+
     } = updatedData;
 
     const order = await OrderModel.findById(orderId);
-     if (!order) {
-    throw new AppError(404, "Order not found");
-  }
-  if (order.status !== "Pending") {
-    throw new AppError(400, "Order already confirmed");
-  }
+    if (!order) {
+        throw new AppError(404, "Order not found");
+    }
+    if (order.status !== "Pending") {
+        throw new AppError(400, "Order already confirmed");
+    }
 
-  console.log(order)
+    //   console.log(order)
     order.shippingAddress = {
-    name,
-    phone,
-    address,
-    shippingArea
-  };
+        name,
+        phone,
+        address,
+        shippingArea
+    };
 
-  order.grandTotal = grandTotal;
-  order.status =  "Shipped";
-  order.paymentStatus = "Pending";
+    order.grandTotal = grandTotal;
+    order.status = "Shipped";
+    order.paymentStatus = "Pending";
 
-  await order.save();
+    await order.save();
 
-  return order;
+    return order;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ConfirmOrdernonuser = async (updatedData: any) => {
+    const { orderedItems, name, phone, address, shippingArea, grandTotal } = updatedData;
+
+    // Clean the items array: Remove the 'guest_...' IDs and extra UI fields
+    const cleanedItems = orderedItems.map((item: {product:string,quantity:number,price:number}) => ({
+        product: item.product, 
+        quantity: item.quantity,
+        price: item.price
+    }));
+
+    const result = await OrderModel.create({
+        orderedItems: cleanedItems, // Pass the cleaned array here
+        totalPrice: grandTotal - (shippingArea === "inside" ? 60 : 120),
+        grandTotal,
+        status: "Shipped",
+        paymentStatus: "Pending",
+        shippingAddress: { name, phone, address, shippingArea }
+    });
+
+    return result;
+};
 export const OrderService = {
-    getAllOrder, updateOrder, ConfirmOrder
+    getAllOrder, updateOrder, ConfirmOrder, ConfirmOrdernonuser
 }

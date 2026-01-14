@@ -63,20 +63,14 @@ const updateOrderStatus = catchAsync(async (req: Request, res: Response, next: N
 const confirmOrder = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
     const id = req.params.id;
-
-    // 1. Get the wrapper object
-    console.log("Body received:", req.body);
-    console.log("id received:", id);
     // eslint-disable-next-line no-unsafe-optional-chaining
     const updatedData  = req.body
-    console.log("updatatedData", updatedData)
 
     if (!updatedData) {
         throw new AppError(400, "updatedData is missing from request body");
     }
     const { name, phone, address, shippingArea, grandTotal } = updatedData;
 
-    // 3. Pass updatedData to your service
     const result = await OrderService.ConfirmOrder(id, updatedData);
 
     sendResponse(res, {
@@ -87,8 +81,23 @@ const confirmOrder = catchAsync(async (req: Request, res: Response, next: NextFu
     });
 })
 
+const confirmOrdernonloguser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
+   const updatedData = req.body;
+
+    if (!updatedData) {
+        throw new AppError(400, "Order data is missing");
+    }
+    const result = await OrderService.ConfirmOrdernonuser(updatedData);
+
+    sendResponse(res, {
+        statusCode: 202,
+        message: "Guest Order created successfully",
+        success: true,
+        data: result,
+    });
+})
 
 export const OrderController = {
-    getAllOrder, updateOrderStatus, confirmOrder
+    getAllOrder, updateOrderStatus, confirmOrder,confirmOrdernonloguser
 }

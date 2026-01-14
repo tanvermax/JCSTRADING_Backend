@@ -4,6 +4,7 @@ export type TOrderStatus = 'Pending' | 'Paid' | 'Shipped' | 'Completed' | 'Cance
 export type TPaymentStatus = 'Pending' | 'Success' | 'Failed';
 
 export interface TOrderItem {
+    _id?:Types.ObjectId | string;
     product: Types.ObjectId | string;
     quantity: number;
     price: number;
