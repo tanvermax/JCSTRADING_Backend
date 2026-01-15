@@ -13,5 +13,6 @@ router.get("/",cheakAuth(...Object.values(Role)), OrderController.getAllOrder)
 router.patch("/:id",cheakAuth(...Object.values(Role)),OrderController.updateOrderStatus)
 router.patch("/orderconfirm/:id",cheakAuth(...Object.values(Role)),OrderController.confirmOrder)
 router.patch("/orderconfirmnonuser/:id", OrderController.confirmOrdernonloguser)
+router.delete("/:id",cheakAuth(...Object.values(Role)), OrderController.deleteOrder)
 
 export const OrderRoute = router

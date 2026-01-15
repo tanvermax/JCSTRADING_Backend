@@ -64,7 +64,7 @@ const confirmOrder = catchAsync(async (req: Request, res: Response, next: NextFu
 
     const id = req.params.id;
     // eslint-disable-next-line no-unsafe-optional-chaining
-    const updatedData  = req.body
+    const updatedData = req.body
 
     if (!updatedData) {
         throw new AppError(400, "updatedData is missing from request body");
@@ -83,7 +83,7 @@ const confirmOrder = catchAsync(async (req: Request, res: Response, next: NextFu
 
 const confirmOrdernonloguser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
-   const updatedData = req.body;
+    const updatedData = req.body;
 
     if (!updatedData) {
         throw new AppError(400, "Order data is missing");
@@ -98,6 +98,28 @@ const confirmOrdernonloguser = catchAsync(async (req: Request, res: Response, ne
     });
 })
 
+
+const deleteOrder = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+   const decodedToken = req.user as JwtPayload;
+    const orderId = req.params.id; // This is the ID from the URL
+    const {productId} = req.body || {}; // Default to empty object if body is missing
+
+    if (!orderId || orderId === "undefined") {
+        throw new AppError(400, "Order ID is missing in URL");
+    }
+
+    // Call service - pass the productId if you are trying to remove a specific item 
+    // from an order, or just the orderId if you are deleting the whole order.
+    const result = await OrderService.DeleteOrder(orderId, decodedToken.userId,productId);
+
+    sendResponse(res, {
+        statusCode: 202,
+        message: "Order Delete successfully",
+        success: true,
+        data: result,
+    });
+})
+
 export const OrderController = {
-    getAllOrder, updateOrderStatus, confirmOrder,confirmOrdernonloguser
+    deleteOrder, getAllOrder, updateOrderStatus, confirmOrder, confirmOrdernonloguser
 }

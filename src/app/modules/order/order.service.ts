@@ -105,8 +105,8 @@ const ConfirmOrdernonuser = async (updatedData: any) => {
     const { orderedItems, name, phone, address, shippingArea, grandTotal } = updatedData;
 
     // Clean the items array: Remove the 'guest_...' IDs and extra UI fields
-    const cleanedItems = orderedItems.map((item: {product:string,quantity:number,price:number}) => ({
-        product: item.product, 
+    const cleanedItems = orderedItems.map((item: { product: string, quantity: number, price: number }) => ({
+        product: item.product,
         quantity: item.quantity,
         price: item.price
     }));
@@ -122,6 +122,45 @@ const ConfirmOrdernonuser = async (updatedData: any) => {
 
     return result;
 };
+
+const DeleteOrder = async (orderId: string, userId: string, productId: string) => {
+
+    const order = await OrderModel.findOne({ _id: orderId, userId: userId });
+    
+    if (!order) {
+        throw new AppError(404, "Order not found or unauthorized");
+    }
+
+    // 2. Find the specific item in the array to get its total cost (price * quantity)
+    const itemToDelete = order.orderedItems.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (item: any) => item.product.toString() === productId
+    );
+
+    if (!itemToDelete) {
+        throw new AppError(404, "Product not found in this order");
+    }
+
+    const amountToSubtract = itemToDelete.price * itemToDelete.quantity;
+
+    // 3. Update the document: Remove the item and decrement the totalPrice
+    const updatedOrder = await OrderModel.findOneAndUpdate(
+        { _id: orderId, userId: userId },
+        {
+            $pull: { orderedItems: { product: productId } }, // Removes the object from array
+            $inc: { totalPrice: -amountToSubtract }        // Subtracts the cost from totalPrice
+        },
+        { new: true } // Return the updated document to the frontend
+    );
+
+    // 4. Cleanup: If the order is now empty, you might want to delete the whole order
+    if (updatedOrder && updatedOrder.orderedItems.length === 0) {
+        await OrderModel.findByIdAndDelete(orderId);
+        return { message: "Order deleted because no items remained", data: null };
+    }
+
+    return updatedOrder;
+};
 export const OrderService = {
-    getAllOrder, updateOrder, ConfirmOrder, ConfirmOrdernonuser
+    getAllOrder, updateOrder, ConfirmOrder, ConfirmOrdernonuser, DeleteOrder
 }
