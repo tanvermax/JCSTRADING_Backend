@@ -8,6 +8,7 @@ import { AdminRouter } from "../modules/admin/admin.routs";
 import { ProductRoute } from "../modules/product/product.route";
 import { OtpRouter } from "../modules/otp/otp.routs";
 import { SkuRouter } from "../modules/sku/sku.route";
+import { PriceStocks } from '../modules/pricetocks/pstocks.route';
 
 export const router = Router();
 
@@ -47,6 +48,10 @@ const moduleRoutes = [
     {
         path: "/order",
         route:OrderRoute
+    },
+    {
+        path: "/pricestocks",
+        route:PriceStocks
     }
 ]
 
