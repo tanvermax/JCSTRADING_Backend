@@ -3,6 +3,7 @@ import { IPriceStockRaw } from './pricestock.interface';
 
 const PriceStockSchema = new Schema<IPriceStockRaw>(
   {
+    _id: { type: String },
     "Product ID": { type: Number, required: true },
     "catId": { type: Number, required: true },
     "*Product Name(English)": { type: String, required: true },
@@ -10,10 +11,10 @@ const PriceStockSchema = new Schema<IPriceStockRaw>(
     "sku": {
       "skuId": { type: Number }
     },
-    "status": { 
-      type: String, 
-      enum: ['active', 'inactive'], 
-      default: 'active' 
+    "status": {
+      type: String,
+      enum: ['active', 'inactive'],
+      default: 'active'
     },
     "Shop SKU": { type: String, required: true },
     "SellerSKU": { type: String },

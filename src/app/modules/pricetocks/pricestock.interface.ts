@@ -1,6 +1,9 @@
 
 
 export interface IPriceStock {
+
+
+  _id?:string,
   productId: number;
   catId: number;
   productNameEnglish: string; // Cleaned name for internal use
@@ -19,6 +22,7 @@ export interface IPriceStock {
 
 // Interface representing the raw data with special characters
 export interface IPriceStockRaw {
+    _id?:string,
   "Product ID": number;
   "catId": number;
   "*Product Name(English)": string;
