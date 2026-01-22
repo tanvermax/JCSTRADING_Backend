@@ -10,4 +10,6 @@ const router = (0, express_1.Router)();
 router.get("/", (0, cheakAuth_1.cheakAuth)(...Object.values(user_interface_1.Role)), Order_controller_1.OrderController.getAllOrder);
 router.patch("/:id", (0, cheakAuth_1.cheakAuth)(...Object.values(user_interface_1.Role)), Order_controller_1.OrderController.updateOrderStatus);
 router.patch("/orderconfirm/:id", (0, cheakAuth_1.cheakAuth)(...Object.values(user_interface_1.Role)), Order_controller_1.OrderController.confirmOrder);
+router.patch("/orderconfirmnonuser/:id", Order_controller_1.OrderController.confirmOrdernonloguser);
+router.delete("/:id", (0, cheakAuth_1.cheakAuth)(...Object.values(user_interface_1.Role)), Order_controller_1.OrderController.deleteOrder);
 exports.OrderRoute = router;

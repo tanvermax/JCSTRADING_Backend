@@ -61,7 +61,7 @@ const ConfirmOrder = (orderId, updatedData) => __awaiter(void 0, void 0, void 0,
     if (order.status !== "Pending") {
         throw new AppError_1.default(400, "Order already confirmed");
     }
-    console.log(order);
+    //   console.log(order)
     order.shippingAddress = {
         name,
         phone,
@@ -74,6 +74,51 @@ const ConfirmOrder = (orderId, updatedData) => __awaiter(void 0, void 0, void 0,
     yield order.save();
     return order;
 });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ConfirmOrdernonuser = (updatedData) => __awaiter(void 0, void 0, void 0, function* () {
+    const { orderedItems, name, phone, address, shippingArea, grandTotal } = updatedData;
+    // Clean the items array: Remove the 'guest_...' IDs and extra UI fields
+    const cleanedItems = orderedItems.map((item) => ({
+        product: item.product,
+        quantity: item.quantity,
+        price: item.price
+    }));
+    const result = yield order_model_1.OrderModel.create({
+        orderedItems: cleanedItems, // Pass the cleaned array here
+        totalPrice: grandTotal - (shippingArea === "inside" ? 60 : 120),
+        grandTotal,
+        status: "Shipped",
+        paymentStatus: "Pending",
+        shippingAddress: { name, phone, address, shippingArea }
+    });
+    return result;
+});
+const DeleteOrder = (orderId, userId, productId) => __awaiter(void 0, void 0, void 0, function* () {
+    const order = yield order_model_1.OrderModel.findOne({ _id: orderId, userId: userId });
+    if (!order) {
+        throw new AppError_1.default(404, "Order not found or unauthorized");
+    }
+    // 2. Find the specific item in the array to get its total cost (price * quantity)
+    const itemToDelete = order.orderedItems.find(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (item) => item.product.toString() === productId);
+    if (!itemToDelete) {
+        throw new AppError_1.default(404, "Product not found in this order");
+    }
+    const amountToSubtract = itemToDelete.price * itemToDelete.quantity;
+    // 3. Update the document: Remove the item and decrement the totalPrice
+    const updatedOrder = yield order_model_1.OrderModel.findOneAndUpdate({ _id: orderId, userId: userId }, {
+        $pull: { orderedItems: { product: productId } }, // Removes the object from array
+        $inc: { totalPrice: -amountToSubtract } // Subtracts the cost from totalPrice
+    }, { new: true } // Return the updated document to the frontend
+    );
+    // 4. Cleanup: If the order is now empty, you might want to delete the whole order
+    if (updatedOrder && updatedOrder.orderedItems.length === 0) {
+        yield order_model_1.OrderModel.findByIdAndDelete(orderId);
+        return { message: "Order deleted because no items remained", data: null };
+    }
+    return updatedOrder;
+});
 exports.OrderService = {
-    getAllOrder, updateOrder, ConfirmOrder
+    getAllOrder, updateOrder, ConfirmOrder, ConfirmOrdernonuser, DeleteOrder
 };

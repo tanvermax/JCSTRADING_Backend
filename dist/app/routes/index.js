@@ -11,6 +11,7 @@ const admin_routs_1 = require("../modules/admin/admin.routs");
 const product_route_1 = require("../modules/product/product.route");
 const otp_routs_1 = require("../modules/otp/otp.routs");
 const sku_route_1 = require("../modules/sku/sku.route");
+const pstocks_route_1 = require("../modules/pricetocks/pstocks.route");
 exports.router = (0, express_1.Router)();
 const moduleRoutes = [
     {
@@ -48,6 +49,10 @@ const moduleRoutes = [
     {
         path: "/order",
         route: OrderCart_route_1.OrderRoute
+    },
+    {
+        path: "/pricestocks",
+        route: pstocks_route_1.PriceStocks
     }
 ];
 moduleRoutes.forEach((route) => {

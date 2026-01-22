@@ -53,17 +53,12 @@ const updateOrderStatus = (0, catchAsync_1.catchAsync)((req, res, next) => __awa
 }));
 const confirmOrder = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const id = req.params.id;
-    // 1. Get the wrapper object
-    console.log("Body received:", req.body);
-    console.log("id received:", id);
     // eslint-disable-next-line no-unsafe-optional-chaining
     const updatedData = req.body;
-    console.log("updatatedData", updatedData);
     if (!updatedData) {
         throw new AppError_1.default(400, "updatedData is missing from request body");
     }
     const { name, phone, address, shippingArea, grandTotal } = updatedData;
-    // 3. Pass updatedData to your service
     const result = yield order_service_1.OrderService.ConfirmOrder(id, updatedData);
     (0, sendresponse_1.sendResponse)(res, {
         statusCode: 202,
@@ -72,6 +67,36 @@ const confirmOrder = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(
         data: result,
     });
 }));
+const confirmOrdernonloguser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const updatedData = req.body;
+    if (!updatedData) {
+        throw new AppError_1.default(400, "Order data is missing");
+    }
+    const result = yield order_service_1.OrderService.ConfirmOrdernonuser(updatedData);
+    (0, sendresponse_1.sendResponse)(res, {
+        statusCode: 202,
+        message: "Guest Order created successfully",
+        success: true,
+        data: result,
+    });
+}));
+const deleteOrder = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const decodedToken = req.user;
+    const orderId = req.params.id; // This is the ID from the URL
+    const { productId } = req.body || {}; // Default to empty object if body is missing
+    if (!orderId || orderId === "undefined") {
+        throw new AppError_1.default(400, "Order ID is missing in URL");
+    }
+    // Call service - pass the productId if you are trying to remove a specific item 
+    // from an order, or just the orderId if you are deleting the whole order.
+    const result = yield order_service_1.OrderService.DeleteOrder(orderId, decodedToken.userId, productId);
+    (0, sendresponse_1.sendResponse)(res, {
+        statusCode: 202,
+        message: "Order Delete successfully",
+        success: true,
+        data: result,
+    });
+}));
 exports.OrderController = {
-    getAllOrder, updateOrderStatus, confirmOrder
+    deleteOrder, getAllOrder, updateOrderStatus, confirmOrder, confirmOrdernonloguser
 };
