@@ -3,11 +3,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PriceStockModel = void 0;
 const mongoose_1 = require("mongoose");
 const PriceStockSchema = new mongoose_1.Schema({
-    _id: { type: String },
+    // _id: { type: String },
     "Product ID": { type: Number, required: true },
     "catId": { type: Number, required: true },
     "*Product Name(English)": { type: String, required: true },
+    "Product Name(Bengali) look function": { type: String },
     "currencyCode": { type: String, default: 'BDT' },
+    "SpecialPrice": { type: Number },
     "sku": {
         "skuId": { type: Number }
     },
@@ -16,6 +18,9 @@ const PriceStockSchema = new mongoose_1.Schema({
         enum: ['active', 'inactive'],
         default: 'active'
     },
+    "SpecialPrice Start": { type: String },
+    "SpecialPrice End": { type: String },
+    "Highlights": { type: String },
     "Shop SKU": { type: String, required: true },
     "SellerSKU": { type: String },
     "*Quantity": { type: Number, required: true, min: 0 },

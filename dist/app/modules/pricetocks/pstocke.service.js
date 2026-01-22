@@ -41,9 +41,14 @@ const getAllPStock = (query) => __awaiter(void 0, void 0, void 0, function* () {
                 _id: 1,
                 "Product ID": 1,
                 "*Product Name(English)": 1,
+                "Product Name(Bengali) look function": "$basicInfo.Product Name(Bengali) look function",
                 "*Price": 1,
+                "SpecialPrice Start": 1,
+                "SpecialPrice End": 1,
                 "*Quantity": 1,
                 "Shop SKU": 1,
+                "currenczyCode": 1,
+                "SpecialPrice": 1,
                 // Bring the image from basic collection to the top level
                 "images": "$basicInfo.*Product Images1",
                 "description": "$basicInfo.Main Description"
@@ -88,18 +93,32 @@ const getSinglePStock = (id) => __awaiter(void 0, void 0, void 0, function* () {
                 _id: 1,
                 "Product ID": 1,
                 "*Product Name(English)": 1,
+                "Product Name(Bengali) look function": "$details.Product Name(Bengali) look function",
                 "*Price": 1,
                 "*Quantity": 1,
                 "Shop SKU": 1,
+                "currenczyCode": 1,
+                "SpecialPrice": 1,
+                "SpecialPrice Start": 1,
+                "SpecialPrice End": 1,
+                // "Highlights":"$details.Highlights",
+                "Highlights": "$details.Highlights",
                 "images": "$details.*Product Images1",
                 "description": "$details.Main Description",
                 // You can also bring other images if you want a gallery
                 "images2": "$details.Product Images2",
-                "images3": "$details.Product Images3"
+                "images3": "$details.Product Images3",
+                "images4": "$details.Product Images4",
+                "images5": "$details.Product Images5",
+                "image6": "$details.Product Images6",
+                "image7": "$details.Product Images7",
+                "image8": "$details.Product Images8",
+                "image9": "$details.Product Images9",
+                "White Background Image": "$details.White Background Image"
             }
         }
     ]);
-    console.log("result", result);
+    // console.log("result", result)
     // Aggregate returns an array, so we return the first item
     return result;
 });

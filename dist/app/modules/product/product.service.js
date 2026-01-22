@@ -19,6 +19,7 @@ const AppError_1 = __importDefault(require("../../errorHelper/AppError"));
 const product_model_1 = require("./product.model");
 const cloudinary_config_1 = require("../../config/cloudinary.config");
 const order_model_1 = require("../order/order.model");
+const pricestock_model_1 = require("../pricetocks/pricestock.model");
 const createProduct = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const ISProductExit = yield product_model_1.Product.findOne({ title: payload.title });
     console.log(ISProductExit);
@@ -93,34 +94,48 @@ const getproductDetails = (id) => __awaiter(void 0, void 0, void 0, function* ()
 const addToCartIntoDB = (payload, userId) => __awaiter(void 0, void 0, void 0, function* () {
     const { productId, quantity, } = payload;
     console.log("productId, quantity, userId", productId, quantity, userId);
-    const product = yield product_model_1.Product.findById(productId);
-    if (!product || !product.stock || product.stock == null)
-        throw new Error('Stock issue');
-    if (!product.price)
-        throw new Error('price issue');
-    if (!product || product.stock < quantity)
-        throw new Error('Stock issue');
+    // 1. Fetch product - Ensure productId is a valid Hex string
+    const product = yield pricestock_model_1.PriceStockModel.findById(productId);
+    if (!product) {
+        throw new Error('Product not found in database');
+    }
+    // 2. Use the EXACT keys from your JSON (with the asterisks)
+    const availableQuantity = product["*Quantity"] || 0;
+    const itemPrice = product["SpecialPrice"] || product["*Price"];
     // 1. Find if the user already has a "Pending" order (their Cart)
     // eslint-disable-next-line prefer-const
-    let cart = yield order_model_1.OrderModel.findOne({ userId: userId, status: 'Pending' });
+    if (availableQuantity < quantity) {
+        throw new Error('Insufficient stock available');
+    }
+    if (!itemPrice) {
+        throw new Error('Product price is missing or invalid');
+    }
+    // 3. Find existing "Pending" order
+    const cart = yield order_model_1.OrderModel.findOne({ userId, status: 'Pending' });
     if (!cart) {
         // 2. No cart? Create one with this item
         return yield order_model_1.OrderModel.create({
             userId: userId,
-            orderedItems: [{ product: productId, quantity, price: product.price }],
-            totalPrice: product.price * quantity,
+            orderedItems: [{
+                    product: productId,
+                    quantity,
+                    price: itemPrice // Use the correct price variable
+                }],
+            totalPrice: itemPrice * quantity,
             status: 'Pending',
         });
     }
     // 3. Cart exists? Check if product is already in the array
     const itemIndex = cart.orderedItems.findIndex(item => item.product.toString() === productId);
     if (itemIndex > -1) {
-        // Increase quantity of existing item
         cart.orderedItems[itemIndex].quantity += quantity;
     }
     else {
-        // Add new item to the array
-        cart.orderedItems.push({ product: productId, quantity, price: product.price });
+        cart.orderedItems.push({
+            product: productId,
+            quantity,
+            price: itemPrice
+        });
     }
     // 4. Recalculate Total
     cart.totalPrice = cart.orderedItems.reduce((total, item) => total + (item.price * item.quantity), 0);
