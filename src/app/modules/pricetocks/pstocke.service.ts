@@ -8,8 +8,13 @@ import { PriceStockModel } from "./pricestock.model";
 
 
 const getAllPStock = async (query: Record<string, string>) => {
+    // const page = Number(query.page) || 1;
+    // const limit = Number(query.limit) || 20;
+    // const skip = (page - 1) * limit;
     // We use aggregate instead of find to join collections
     const product = await PriceStockModel.aggregate([
+        // { $skip: skip },
+        // { $limit: limit },
         {
             // 1. Filter based on your query (like category or status)
             $match: query

@@ -15,6 +15,7 @@ import { PriceStockModel } from "./pricestock.model";
 
 const getAllPstokes = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const query = req.query;
+    
     // console.log("query from controller", query)
     const result = await pstockService.getAllPStock(query as Record<string, string>);
 
