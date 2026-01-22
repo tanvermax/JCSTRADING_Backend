@@ -6,6 +6,7 @@ import { IProduct } from "./product.interface";
 import { Product } from "./product.model";
 import { deleteImageForCloudinary } from '../../config/cloudinary.config';
 import { OrderModel } from '../order/order.model';
+import { PriceStockModel } from '../pricetocks/pricestock.model';
 
 
 
@@ -95,46 +96,68 @@ const getproductDetails = async (id: string) => {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const addToCartIntoDB = async (payload: { productId: string; quantity: number },userId:string) => {
-    const { productId, quantity,  } = payload;
-    
-    console.log("productId, quantity, userId", productId, quantity,userId)
+const addToCartIntoDB = async (payload: { productId: string; quantity: number }, userId: string) => {
+    const { productId, quantity, } = payload;
 
+    console.log("productId, quantity, userId", productId, quantity, userId)
 
-    const product = await Product.findById(productId);
+// 1. Fetch product - Ensure productId is a valid Hex string
+    const product = await PriceStockModel.findById(productId);
 
-    if (!product || !product.stock || product.stock == null) throw new Error('Stock issue');
-    if (!product.price) throw new Error('price issue');
+    if (!product) {
+        throw new Error('Product not found in database');
+    }
 
-    if (!product || product.stock < quantity) throw new Error('Stock issue');
+    // 2. Use the EXACT keys from your JSON (with the asterisks)
+    const availableQuantity = product["*Quantity"] || 0;
+    const itemPrice = product["SpecialPrice"] || product["*Price"];
 
     // 1. Find if the user already has a "Pending" order (their Cart)
     // eslint-disable-next-line prefer-const
-    let cart = await OrderModel.findOne({ userId:userId, status: 'Pending' });
+   if (availableQuantity < quantity) {
+        throw new Error('Insufficient stock available');
+    }
+
+    if (!itemPrice) {
+        throw new Error('Product price is missing or invalid');
+    }
+
+    // 3. Find existing "Pending" order
+    const cart = await OrderModel.findOne({ userId, status: 'Pending' });
 
     if (!cart) {
         // 2. No cart? Create one with this item
         return await OrderModel.create({
-            userId:userId,
-            orderedItems: [{ product: productId, quantity, price: product.price }],
-            totalPrice: product.price * quantity,
+            userId: userId,
+            orderedItems: [{ 
+                product: productId, 
+                quantity, 
+                price: itemPrice // Use the correct price variable
+            }],
+            totalPrice: itemPrice * quantity,
             status: 'Pending',
         });
     }
 
     // 3. Cart exists? Check if product is already in the array
-    const itemIndex = cart.orderedItems.findIndex(item => item.product.toString() === productId);
+    const itemIndex = cart.orderedItems.findIndex(
+        item => item.product.toString() === productId
+    );
 
-    if (itemIndex > -1) {
-        // Increase quantity of existing item
+   if (itemIndex > -1) {
         cart.orderedItems[itemIndex].quantity += quantity;
     } else {
-        // Add new item to the array
-        cart.orderedItems.push({ product: productId, quantity, price: product.price });
+        cart.orderedItems.push({ 
+            product: productId, 
+            quantity, 
+            price: itemPrice 
+        });
     }
 
     // 4. Recalculate Total
-    cart.totalPrice = cart.orderedItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+    cart.totalPrice = cart.orderedItems.reduce(
+        (total, item) => total + (item.price * item.quantity), 0
+    );
 
     return await cart.save();
 };

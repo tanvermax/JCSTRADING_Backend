@@ -1,24 +1,76 @@
 import httpStatus from 'http-status-codes';
 import AppError from "../../errorHelper/AppError";
 import { OrderModel } from "./order.model";
+import { Types } from 'mongoose';
 
 const getAllOrder = async (query: Record<string, string>, userId: string) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const filter: Record<string, any> = { ...query };
-    if (userId) {
-        filter.userId = userId;
-    }
-    // console.log("filter",filter)
-    const Order = await OrderModel.find(filter).populate('orderedItems.product');
+   const filter: any = {};
+    if (userId) filter.userId = new Types.ObjectId(userId);
+    
+    // Add other query filters if necessary (e.g. status: 'Pending')
+    if (query.status) filter.status = query.status;
 
-    const totalProduct = await OrderModel.countDocuments();
+   const orders = await OrderModel.aggregate([
+    { $match: filter },
+    { $unwind: "$orderedItems" },
+    // 1. Join with pricestock
+    {
+        $lookup: {
+            from: "pricestock",
+            localField: "orderedItems.product",
+            foreignField: "_id",
+            as: "productDetails"
+        }
+    },
+    { $unwind: "$productDetails" },
+    // 2. Join with besic collection
+    {
+        $lookup: {
+            from: "besic",
+            localField: "productDetails.Product ID",
+            foreignField: "Product ID",
+            as: "basicInfo"
+        }
+    },
+    { $unwind: { path: "$basicInfo", preserveNullAndEmptyArrays: true } },
+    // 3. FIX: Use $mergeObjects to combine product details with basic info
+    {
+        $addFields: {
+            "orderedItems.product": {
+                $mergeObjects: [
+                    "$productDetails",
+                    {
+                        images: "$basicInfo.*Product Images1",
+                        highlights: "$basicInfo.Highlights"
+                    }
+                ]
+            }
+        }
+    },
+    // 4. Group back into the original order structure
+    {
+        $group: {
+            _id: "$_id",
+            userId: { $first: "$userId" },
+            orderedItems: { $push: "$orderedItems" },
+            totalPrice: { $first: "$totalPrice" },
+            status: { $first: "$status" },
+            paymentStatus: { $first: "$paymentStatus" },
+            createdAt: { $first: "$createdAt" },
+            updatedAt: { $first: "$updatedAt" },
+            // Include other fields if your schema has them
+            shippingAddress: { $first: "$shippingAddress" },
+            grandTotal: { $first: "$grandTotal" }
+        }
+    },
+    { $sort: { createdAt: -1 } }
+]);
 
     return {
-        data: Order,
-        meta: {
-            total: totalProduct
-        }
-    }
+        data: orders,
+        meta: { total: orders.length }
+    };
 }
 
 

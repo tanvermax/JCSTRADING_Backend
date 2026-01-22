@@ -25,12 +25,17 @@ export interface IPriceStockRaw {
     _id?:string,
   "Product ID": number;
   "catId": number;
+  "SpecialPrice":number,
+  "SpecialPrice Start":string,
+  "SpecialPrice End":string,
+  "Product Name(Bengali) look function":string,
   "*Product Name(English)": string;
   "currencyCode": string;
   "sku": {
     "skuId": number;
   };
   "status": string;
+  "Highlights":string,
   "Shop SKU": string;
   "SellerSKU": string;
   "*Quantity": number;
