@@ -172,6 +172,110 @@ const DeleteOrder = (orderId, userId, productId) => __awaiter(void 0, void 0, vo
     }
     return updatedOrder;
 });
+const ConfirmAdminOrder = (id, status, trackingId, courierName) => __awaiter(void 0, void 0, void 0, function* () {
+    // Clean the items array: Remove the 'guest_...' IDs and extra UI fields
+    const updatedOrder = yield order_model_1.OrderModel.findByIdAndUpdate(id, {
+        status,
+        trackingId,
+        courierName,
+        // Note: 'updatedAt' is handled automatically by Mongoose 'timestamps: true'
+    }, { new: true, runValidators: true } // runValidators ensures enum values are checked
+    );
+    if (!updatedOrder) {
+        throw new AppError_1.default(404, "Order not found");
+    }
+    return updatedOrder;
+});
+const getAllOrderForAdmin = (query) => __awaiter(void 0, void 0, void 0, function* () {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const filter = {};
+    if (query.status)
+        filter.status = query.status;
+    const orders = yield order_model_1.OrderModel.aggregate([
+        { $match: filter },
+        {
+            $unwind: {
+                path: "$orderedItems",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $lookup: {
+                from: "pricestock",
+                localField: "orderedItems.product",
+                foreignField: "_id",
+                as: "productDetails"
+            }
+        },
+        {
+            $unwind: {
+                path: "$productDetails",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        // 4. Lookup basic info
+        {
+            $lookup: {
+                from: "besic",
+                localField: "productDetails.Product ID",
+                foreignField: "Product ID",
+                as: "basicInfo"
+            }
+        },
+        { $unwind: { path: "$basicInfo", preserveNullAndEmptyArrays: true } },
+        // 5. Build the product object safely
+        {
+            $addFields: {
+                "orderedItems.product": {
+                    $cond: {
+                        // Check if productDetails exists as an object
+                        if: { $ifNull: ["$productDetails", false] },
+                        then: {
+                            $mergeObjects: [
+                                "$productDetails",
+                                {
+                                    images: "$basicInfo.*Product Images1",
+                                    productName: "$basicInfo.*Product Name(English)"
+                                }
+                            ]
+                        },
+                        else: "$orderedItems.product" // Keep original if no lookup match
+                    }
+                }
+            }
+        },
+        // 6. Group back together
+        {
+            $group: {
+                _id: "$_id",
+                orderedItems: { $push: "$orderedItems" },
+                totalPrice: { $first: "$totalPrice" },
+                grandTotal: { $first: "$grandTotal" },
+                status: { $first: "$status" },
+                paymentStatus: { $first: "$paymentStatus" },
+                shippingAddress: { $first: "$shippingAddress" },
+                createdAt: { $first: "$createdAt" },
+                updatedAt: { $first: "$updatedAt" }
+            }
+        },
+        {
+            $addFields: {
+                orderedItems: {
+                    $filter: {
+                        input: "$orderedItems",
+                        as: "item",
+                        cond: { $ne: ["$$item", {}] }
+                    }
+                }
+            }
+        },
+        { $sort: { createdAt: -1 } }
+    ]);
+    return {
+        data: orders,
+        meta: { total: orders.length }
+    };
+});
 exports.OrderService = {
-    getAllOrder, updateOrder, ConfirmOrder, ConfirmOrdernonuser, DeleteOrder
+    getAllOrder, updateOrder, getAllOrderForAdmin, ConfirmAdminOrder, ConfirmOrder, ConfirmOrdernonuser, DeleteOrder
 };

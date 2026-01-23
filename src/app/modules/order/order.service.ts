@@ -5,67 +5,67 @@ import { Types } from 'mongoose';
 
 const getAllOrder = async (query: Record<string, string>, userId: string) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-   const filter: any = {};
+    const filter: any = {};
     if (userId) filter.userId = new Types.ObjectId(userId);
-    
+
     // Add other query filters if necessary (e.g. status: 'Pending')
     if (query.status) filter.status = query.status;
 
-   const orders = await OrderModel.aggregate([
-    { $match: filter },
-    { $unwind: "$orderedItems" },
-    // 1. Join with pricestock
-    {
-        $lookup: {
-            from: "pricestock",
-            localField: "orderedItems.product",
-            foreignField: "_id",
-            as: "productDetails"
-        }
-    },
-    { $unwind: "$productDetails" },
-    // 2. Join with besic collection
-    {
-        $lookup: {
-            from: "besic",
-            localField: "productDetails.Product ID",
-            foreignField: "Product ID",
-            as: "basicInfo"
-        }
-    },
-    { $unwind: { path: "$basicInfo", preserveNullAndEmptyArrays: true } },
-    // 3. FIX: Use $mergeObjects to combine product details with basic info
-    {
-        $addFields: {
-            "orderedItems.product": {
-                $mergeObjects: [
-                    "$productDetails",
-                    {
-                        images: "$basicInfo.*Product Images1",
-                        highlights: "$basicInfo.Highlights"
-                    }
-                ]
+    const orders = await OrderModel.aggregate([
+        { $match: filter },
+        { $unwind: "$orderedItems" },
+        // 1. Join with pricestock
+        {
+            $lookup: {
+                from: "pricestock",
+                localField: "orderedItems.product",
+                foreignField: "_id",
+                as: "productDetails"
             }
-        }
-    },
-    // 4. Group back into the original order structure
-    {
-        $group: {
-            _id: "$_id",
-            userId: { $first: "$userId" },
-            orderedItems: { $push: "$orderedItems" },
-            totalPrice: { $first: "$totalPrice" },
-            status: { $first: "$status" },
-            paymentStatus: { $first: "$paymentStatus" },
-            createdAt: { $first: "$createdAt" },
-            updatedAt: { $first: "$updatedAt" },
-            // Include other fields if your schema has them
-            shippingAddress: { $first: "$shippingAddress" },
-            grandTotal: { $first: "$grandTotal" }
-        }
-    },
-    { $sort: { createdAt: -1 } }
-]);
+        },
+        { $unwind: "$productDetails" },
+        // 2. Join with besic collection
+        {
+            $lookup: {
+                from: "besic",
+                localField: "productDetails.Product ID",
+                foreignField: "Product ID",
+                as: "basicInfo"
+            }
+        },
+        { $unwind: { path: "$basicInfo", preserveNullAndEmptyArrays: true } },
+        // 3. FIX: Use $mergeObjects to combine product details with basic info
+        {
+            $addFields: {
+                "orderedItems.product": {
+                    $mergeObjects: [
+                        "$productDetails",
+                        {
+                            images: "$basicInfo.*Product Images1",
+                            highlights: "$basicInfo.Highlights"
+                        }
+                    ]
+                }
+            }
+        },
+        // 4. Group back into the original order structure
+        {
+            $group: {
+                _id: "$_id",
+                userId: { $first: "$userId" },
+                orderedItems: { $push: "$orderedItems" },
+                totalPrice: { $first: "$totalPrice" },
+                status: { $first: "$status" },
+                paymentStatus: { $first: "$paymentStatus" },
+                createdAt: { $first: "$createdAt" },
+                updatedAt: { $first: "$updatedAt" },
+                // Include other fields if your schema has them
+                shippingAddress: { $first: "$shippingAddress" },
+                grandTotal: { $first: "$grandTotal" }
+            }
+        },
+        { $sort: { createdAt: -1 } }
+    ]);
 
     return {
         data: orders,
@@ -178,7 +178,7 @@ const ConfirmOrdernonuser = async (updatedData: any) => {
 const DeleteOrder = async (orderId: string, userId: string, productId: string) => {
 
     const order = await OrderModel.findOne({ _id: orderId, userId: userId });
-    
+
     if (!order) {
         throw new AppError(404, "Order not found or unauthorized");
     }
@@ -213,6 +213,120 @@ const DeleteOrder = async (orderId: string, userId: string, productId: string) =
 
     return updatedOrder;
 };
+
+const ConfirmAdminOrder = async (id: string, status: string, trackingId: string, courierName: string) => {
+
+    // Clean the items array: Remove the 'guest_...' IDs and extra UI fields
+    const updatedOrder = await OrderModel.findByIdAndUpdate(
+        id,
+        {
+            status,
+            trackingId,
+            courierName,
+            // Note: 'updatedAt' is handled automatically by Mongoose 'timestamps: true'
+        },
+        { new: true, runValidators: true } // runValidators ensures enum values are checked
+    );
+    if (!updatedOrder) {
+        throw new AppError(404, "Order not found");
+    }
+
+    return updatedOrder;
+};
+
+const getAllOrderForAdmin = async (query: Record<string, string>) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   const filter: any = {};
+    if (query.status) filter.status = query.status;
+
+    const orders = await OrderModel.aggregate([
+        { $match: filter },
+        {
+            $unwind: {
+                path: "$orderedItems",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $lookup: {
+                from: "pricestock", 
+                localField: "orderedItems.product",
+                foreignField: "_id",
+                as: "productDetails"
+            }
+        },
+        { 
+            $unwind: { 
+                path: "$productDetails", 
+                preserveNullAndEmptyArrays: true 
+            } 
+        },
+        // 4. Lookup basic info
+        {
+            $lookup: {
+                from: "besic", 
+                localField: "productDetails.Product ID",
+                foreignField: "Product ID",
+                as: "basicInfo"
+            }
+        },
+       { $unwind: { path: "$basicInfo", preserveNullAndEmptyArrays: true } },
+        // 5. Build the product object safely
+      {
+            $addFields: {
+                "orderedItems.product": {
+                    $cond: {
+                        // Check if productDetails exists as an object
+                        if: { $ifNull: ["$productDetails", false] },
+                        then: {
+                            $mergeObjects: [
+                                "$productDetails",
+                                {
+                                    images: "$basicInfo.*Product Images1",
+                                    productName: "$basicInfo.*Product Name(English)"
+                                }
+                            ]
+                        },
+                        else: "$orderedItems.product" // Keep original if no lookup match
+                    }
+                }
+            }
+        },
+
+        // 6. Group back together
+        {
+            $group: {
+                _id: "$_id",
+                orderedItems: { $push: "$orderedItems" },
+                totalPrice: { $first: "$totalPrice" },
+                grandTotal: { $first: "$grandTotal" },
+                status: { $first: "$status" },
+                paymentStatus: { $first: "$paymentStatus" },
+                shippingAddress: { $first: "$shippingAddress" },
+                createdAt: { $first: "$createdAt" },
+                updatedAt: { $first: "$updatedAt" }
+            }
+        },
+       {
+            $addFields: {
+                orderedItems: {
+                    $filter: {
+                        input: "$orderedItems",
+                        as: "item",
+                        cond: { $ne: ["$$item", {}] }
+                    }
+                }
+            }
+        },
+        { $sort: { createdAt: -1 } }
+    ]);
+   
+
+    return {
+        data: orders,
+        meta: { total: orders.length }
+    };
+}
 export const OrderService = {
-    getAllOrder, updateOrder, ConfirmOrder, ConfirmOrdernonuser, DeleteOrder
+    getAllOrder, updateOrder, getAllOrderForAdmin, ConfirmAdminOrder, ConfirmOrder, ConfirmOrdernonuser, DeleteOrder
 }

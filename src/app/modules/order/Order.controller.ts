@@ -100,9 +100,9 @@ const confirmOrdernonloguser = catchAsync(async (req: Request, res: Response, ne
 
 
 const deleteOrder = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-   const decodedToken = req.user as JwtPayload;
+    const decodedToken = req.user as JwtPayload;
     const orderId = req.params.id; // This is the ID from the URL
-    const {productId} = req.body || {}; // Default to empty object if body is missing
+    const { productId } = req.body || {}; // Default to empty object if body is missing
 
     if (!orderId || orderId === "undefined") {
         throw new AppError(400, "Order ID is missing in URL");
@@ -110,7 +110,7 @@ const deleteOrder = catchAsync(async (req: Request, res: Response, next: NextFun
 
     // Call service - pass the productId if you are trying to remove a specific item 
     // from an order, or just the orderId if you are deleting the whole order.
-    const result = await OrderService.DeleteOrder(orderId, decodedToken.userId,productId);
+    const result = await OrderService.DeleteOrder(orderId, decodedToken.userId, productId);
 
     sendResponse(res, {
         statusCode: 202,
@@ -120,6 +120,51 @@ const deleteOrder = catchAsync(async (req: Request, res: Response, next: NextFun
     });
 })
 
+const confirmAdminOrdernonloguser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+
+    const { id } = req.params;
+    const { status, trackingId, courierName } = req.body;
+
+    // Validation
+    if (!status || !trackingId || !courierName) {
+        throw new AppError(400, "Status, Tracking ID, and Courier Name are required");
+    }
+
+    // Pass 'id' as the first argument
+    const result = await OrderService.ConfirmAdminOrder(
+        id,
+        status,
+        trackingId,
+        courierName
+    );
+
+    sendResponse(res, {
+        statusCode: 200, // Changed to 200 for standard success
+        success: true,
+        message: "Order updated and shipped successfully",
+        data: result,
+    });
+
+});
+
+const getAllAdminOrder = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+
+    
+    const query = req.query;
+    // console.log("query from controller", query)
+    const result = await OrderService.getAllOrderForAdmin(query as Record<string, string>);
+
+
+    sendResponse(res, {
+        statusCode: 200, // Standard GET success code
+        message: "All orders retrieved successfully for admin",
+        success: true,
+        data: result.data,
+        meta: result.meta
+    });
+});
+
+
 export const OrderController = {
-    deleteOrder, getAllOrder, updateOrderStatus, confirmOrder, confirmOrdernonloguser
+    deleteOrder, getAllOrder,getAllAdminOrder, confirmAdminOrdernonloguser, updateOrderStatus, confirmOrder, confirmOrdernonloguser
 }

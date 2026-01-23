@@ -97,6 +97,34 @@ const deleteOrder = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(v
         data: result,
     });
 }));
+const confirmAdminOrdernonloguser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    const { status, trackingId, courierName } = req.body;
+    // Validation
+    if (!status || !trackingId || !courierName) {
+        throw new AppError_1.default(400, "Status, Tracking ID, and Courier Name are required");
+    }
+    // Pass 'id' as the first argument
+    const result = yield order_service_1.OrderService.ConfirmAdminOrder(id, status, trackingId, courierName);
+    (0, sendresponse_1.sendResponse)(res, {
+        statusCode: 200, // Changed to 200 for standard success
+        success: true,
+        message: "Order updated and shipped successfully",
+        data: result,
+    });
+}));
+const getAllAdminOrder = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const query = req.query;
+    // console.log("query from controller", query)
+    const result = yield order_service_1.OrderService.getAllOrderForAdmin(query);
+    (0, sendresponse_1.sendResponse)(res, {
+        statusCode: 200, // Standard GET success code
+        message: "All orders retrieved successfully for admin",
+        success: true,
+        data: result.data,
+        meta: result.meta
+    });
+}));
 exports.OrderController = {
-    deleteOrder, getAllOrder, updateOrderStatus, confirmOrder, confirmOrdernonloguser
+    deleteOrder, getAllOrder, getAllAdminOrder, confirmAdminOrdernonloguser, updateOrderStatus, confirmOrder, confirmOrdernonloguser
 };

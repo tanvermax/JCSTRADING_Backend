@@ -15,4 +15,9 @@ router.patch("/orderconfirm/:id",cheakAuth(...Object.values(Role)),OrderControll
 router.patch("/orderconfirmnonuser/:id", OrderController.confirmOrdernonloguser)
 router.delete("/:id",cheakAuth(...Object.values(Role)), OrderController.deleteOrder)
 
+
+
+router.get("/admin",cheakAuth(...Object.values(Role)), OrderController.getAllAdminOrder)
+router.patch("/admin/:id", OrderController.confirmAdminOrdernonloguser)
+
 export const OrderRoute = router
