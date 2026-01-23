@@ -144,7 +144,7 @@ const ConfirmOrder = async (orderId: string, updatedData: { name: string, phone:
     };
 
     order.grandTotal = grandTotal;
-    order.status = "Shipped";
+    order.status = "Completed";
     order.paymentStatus = "Pending";
 
     await order.save();
@@ -167,7 +167,7 @@ const ConfirmOrdernonuser = async (updatedData: any) => {
         orderedItems: cleanedItems, // Pass the cleaned array here
         totalPrice: grandTotal - (shippingArea === "inside" ? 60 : 120),
         grandTotal,
-        status: "Shipped",
+        status: "Completed",
         paymentStatus: "Pending",
         shippingAddress: { name, phone, address, shippingArea }
     });
@@ -301,6 +301,8 @@ const getAllOrderForAdmin = async (query: Record<string, string>) => {
                 totalPrice: { $first: "$totalPrice" },
                 grandTotal: { $first: "$grandTotal" },
                 status: { $first: "$status" },
+                courierName:{$first:"$courierName"},
+                trackingId:{$first:"$trackingId"},
                 paymentStatus: { $first: "$paymentStatus" },
                 shippingAddress: { $first: "$shippingAddress" },
                 createdAt: { $first: "$createdAt" },

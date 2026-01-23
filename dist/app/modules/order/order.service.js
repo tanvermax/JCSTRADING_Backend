@@ -122,7 +122,7 @@ const ConfirmOrder = (orderId, updatedData) => __awaiter(void 0, void 0, void 0,
         shippingArea
     };
     order.grandTotal = grandTotal;
-    order.status = "Shipped";
+    order.status = "Completed";
     order.paymentStatus = "Pending";
     yield order.save();
     return order;
@@ -140,7 +140,7 @@ const ConfirmOrdernonuser = (updatedData) => __awaiter(void 0, void 0, void 0, f
         orderedItems: cleanedItems, // Pass the cleaned array here
         totalPrice: grandTotal - (shippingArea === "inside" ? 60 : 120),
         grandTotal,
-        status: "Shipped",
+        status: "Completed",
         paymentStatus: "Pending",
         shippingAddress: { name, phone, address, shippingArea }
     });
@@ -252,6 +252,8 @@ const getAllOrderForAdmin = (query) => __awaiter(void 0, void 0, void 0, functio
                 totalPrice: { $first: "$totalPrice" },
                 grandTotal: { $first: "$grandTotal" },
                 status: { $first: "$status" },
+                courierName: { $first: "$courierName" },
+                trackingId: { $first: "$trackingId" },
                 paymentStatus: { $first: "$paymentStatus" },
                 shippingAddress: { $first: "$shippingAddress" },
                 createdAt: { $first: "$createdAt" },

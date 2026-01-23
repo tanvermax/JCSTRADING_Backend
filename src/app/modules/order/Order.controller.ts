@@ -123,14 +123,15 @@ const deleteOrder = catchAsync(async (req: Request, res: Response, next: NextFun
 const confirmAdminOrdernonloguser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
     const { id } = req.params;
-    const { status, trackingId, courierName } = req.body;
 
-    // Validation
+    const body = req.body || {};
+
+    const { status, trackingId, courierName } = body;
+
     if (!status || !trackingId || !courierName) {
         throw new AppError(400, "Status, Tracking ID, and Courier Name are required");
     }
 
-    // Pass 'id' as the first argument
     const result = await OrderService.ConfirmAdminOrder(
         id,
         status,
@@ -139,7 +140,7 @@ const confirmAdminOrdernonloguser = catchAsync(async (req: Request, res: Respons
     );
 
     sendResponse(res, {
-        statusCode: 200, // Changed to 200 for standard success
+        statusCode: 200, 
         success: true,
         message: "Order updated and shipped successfully",
         data: result,
@@ -149,7 +150,7 @@ const confirmAdminOrdernonloguser = catchAsync(async (req: Request, res: Respons
 
 const getAllAdminOrder = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
-    
+
     const query = req.query;
     // console.log("query from controller", query)
     const result = await OrderService.getAllOrderForAdmin(query as Record<string, string>);
@@ -166,5 +167,5 @@ const getAllAdminOrder = catchAsync(async (req: Request, res: Response, next: Ne
 
 
 export const OrderController = {
-    deleteOrder, getAllOrder,getAllAdminOrder, confirmAdminOrdernonloguser, updateOrderStatus, confirmOrder, confirmOrdernonloguser
+    deleteOrder, getAllOrder, getAllAdminOrder, confirmAdminOrdernonloguser, updateOrderStatus, confirmOrder, confirmOrdernonloguser
 }

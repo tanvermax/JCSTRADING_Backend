@@ -23,6 +23,8 @@ const orderSchema = new mongoose_1.Schema({
         enum: ['Pending', 'Success', 'Failed'],
         default: 'Pending'
     },
+    trackingId: { type: String },
+    courierName: { type: String },
     grandTotal: { type: Number },
     transactionId: { type: String },
     shippingAddress: {

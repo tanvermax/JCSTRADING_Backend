@@ -99,15 +99,14 @@ const deleteOrder = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(v
 }));
 const confirmAdminOrdernonloguser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const { status, trackingId, courierName } = req.body;
-    // Validation
+    const body = req.body || {};
+    const { status, trackingId, courierName } = body;
     if (!status || !trackingId || !courierName) {
         throw new AppError_1.default(400, "Status, Tracking ID, and Courier Name are required");
     }
-    // Pass 'id' as the first argument
     const result = yield order_service_1.OrderService.ConfirmAdminOrder(id, status, trackingId, courierName);
     (0, sendresponse_1.sendResponse)(res, {
-        statusCode: 200, // Changed to 200 for standard success
+        statusCode: 200,
         success: true,
         message: "Order updated and shipped successfully",
         data: result,

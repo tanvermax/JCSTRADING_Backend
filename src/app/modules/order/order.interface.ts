@@ -16,7 +16,9 @@ export interface TOrder {
     grandTotal?:number     // Moved from TOrderItem to here
     orderedItems: TOrderItem[];
     totalPrice: number;
+    trackingId:string,
     status: TOrderStatus;
+    courierName:string;
     paymentStatus: TPaymentStatus;
     transactionId?: string;
     shippingAddress: {

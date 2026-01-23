@@ -23,6 +23,8 @@ const orderSchema = new Schema<TOrder>({
     enum: ['Pending', 'Success', 'Failed'],
     default: 'Pending'
   },
+  trackingId:{type:String},
+  courierName:{type:String},
   grandTotal: { type: Number },
   transactionId: { type: String },
   shippingAddress: {
