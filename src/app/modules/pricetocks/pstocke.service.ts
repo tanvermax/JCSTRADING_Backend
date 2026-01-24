@@ -8,33 +8,40 @@ import { PriceStockModel } from "./pricestock.model";
 
 
 const getAllPStock = async (query: Record<string, string>) => {
-    // const page = Number(query.page) || 1;
-    // const limit = Number(query.limit) || 20;
-    // const skip = (page - 1) * limit;
-    // We use aggregate instead of find to join collections
+   // 1. Get page and limit from query, or use defaults
+  const { page: queryPage, limit: queryLimit, search, ...filterData } = query;
+
+    const page = Number(queryPage) || 1;
+    const limit = Number(queryLimit) || 20; 
+    const skip = (page - 1) * limit; // এটিই নির্ধারণ করে কোন ২০টি ডাটা আসবে
+
+    // ২. সার্চ কন্ডিশন তৈরি করুন
+    const searchCondition = search 
+        ? { "*Product Name(English)": { $regex: search, $options: "i" } } 
+        : {};
+
     const product = await PriceStockModel.aggregate([
-        // { $skip: skip },
-        // { $limit: limit },
         {
-            // 1. Filter based on your query (like category or status)
-            $match: query
+            // ৩. এখানে শুধু ফিল্টার এবং সার্চ থাকবে (page/limit থাকবে না)
+            $match: { ...filterData, ...searchCondition }
         },
+        { $skip: skip },   // আগের ডাটাগুলো বাদ দিবে
+        { $limit: limit }, // পরবর্তী ২০টি ডাটা নিবে
         {
-            // 2. Look into the 'basics' collection (use the actual collection name in DB)
             $lookup: {
-                from: "besic", // Check your MongoDB for the exact collection name
+                from: "besic",
                 localField: "Product ID",
                 foreignField: "Product ID",
                 as: "basicInfo"
             }
         },
         {
-            // 3. Convert basicInfo array to a single object
             $unwind: {
                 path: "$basicInfo",
-                preserveNullAndEmptyArrays: true // Keep product even if image is missing
+                preserveNullAndEmptyArrays: true
             }
         },
+        
         {
             // 4. Clean up the output to match what your Frontend needs
             $project: {
@@ -56,12 +63,14 @@ const getAllPStock = async (query: Record<string, string>) => {
         }
     ]);
 
-    const totalProduct = await PriceStockModel.countDocuments(query);
+    const totalProduct = await PriceStockModel.countDocuments({ ...filterData, ...searchCondition });
 
     return {
         data: product,
         meta: {
-            total: totalProduct
+            total: totalProduct,
+            page,
+            limit
         }
     };
 };
