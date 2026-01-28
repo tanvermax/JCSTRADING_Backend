@@ -24,21 +24,30 @@ exports.pstockService = void 0;
 const mongoose_1 = require("mongoose");
 const pricestock_model_1 = require("./pricestock.model");
 const getAllPStock = (query) => __awaiter(void 0, void 0, void 0, function* () {
-    // 1. Get page and limit from query, or use defaults
-    const { page: queryPage, limit: queryLimit, search } = query, filterData = __rest(query, ["page", "limit", "search"]);
+    const { page: queryPage, limit: queryLimit, search, category } = query, filterData = __rest(query, ["page", "limit", "search", "category"]);
     const page = Number(queryPage) || 1;
     const limit = Number(queryLimit) || 20;
-    const skip = (page - 1) * limit; // এটিই নির্ধারণ করে কোন ২০টি ডাটা আসবে
-    // ২. সার্চ কন্ডিশন তৈরি করুন
+    const skip = (page - 1) * limit;
     const searchCondition = search
         ? { "*Product Name(English)": { $regex: search, $options: "i" } }
         : {};
+    // --- CATEGORY FILTER LOGIC ---
+    // Note: Since category is calculated in $project, 
+    // we use the same regex logic in $match to filter before pagination.
+    let categoryCondition = {};
+    if (category === "PC") {
+        categoryCondition = { "*Product Name(English)": { $regex: /computer|wheel/i } };
+    }
+    else if (category === "Pet Supplies") {
+        categoryCondition = { "*Product Name(English)": { $regex: /cat|kitten/i } };
+    }
+    // Add other categories here...
     const product = yield pricestock_model_1.PriceStockModel.aggregate([
         {
-            // ৩. এখানে শুধু ফিল্টার এবং সার্চ থাকবে (page/limit থাকবে না)
-            $match: Object.assign(Object.assign({}, filterData), searchCondition)
+            $match: Object.assign(Object.assign(Object.assign({}, filterData), searchCondition), categoryCondition // Apply the filter here
+            )
         },
-        { $skip: skip }, // আগের ডাটাগুলো বাদ দিবে
+        { $skip: skip },
         { $limit: limit }, // পরবর্তী ২০টি ডাটা নিবে
         {
             $lookup: {
@@ -61,6 +70,42 @@ const getAllPStock = (query) => __awaiter(void 0, void 0, void 0, function* () {
                 "Product ID": 1,
                 "*Product Name(English)": 1,
                 "Product Name(Bengali) look function": "$basicInfo.Product Name(Bengali) look function",
+                // --- NEW CATEGORIZATION LOGIC ---
+                "category": {
+                    $switch: {
+                        branches: [
+                            {
+                                case: { $regexMatch: { input: "$*Product Name(English)", regex: /cat|kitten|feline/i } },
+                                then: "Pet Supplies"
+                            },
+                            {
+                                case: { $regexMatch: { input: "$*Product Name(English)", regex: /car|auto|bmw|vehicle|wheel/i } },
+                                then: "Automotive"
+                            },
+                            {
+                                case: {
+                                    $and: [
+                                        { $not: { $regexMatch: { input: "$*Product Name(English)", regex: /steering|car/i } } }, // Must NOT match
+                                        // { $regexMatch: { input: "$*Product Name(English)", regex: /computer|mouse|wheel/i } } // Must match
+                                    ]
+                                },
+                                then: "other"
+                            },
+                            {
+                                case: {
+                                    //  $regexMatch: { input: "$*Product Name(English)", regex: /guitar|acoustic|strum|strings/i }
+                                    $and: [
+                                        { $regexMatch: { input: "$*Product Name(English)", regex: /guitar|acoustic|strum|strings/i } },
+                                        { $not: { $regexMatch: { input: "$*Product Name(English)", regex: /Keyring|Keychain|car/i } } }
+                                    ]
+                                },
+                                then: "Musical Instruments"
+                            }
+                        ],
+                        default: "Uncategorized"
+                    }
+                },
+                // --- END OF NEW LOGIC ---
                 "*Price": 1,
                 "SpecialPrice Start": 1,
                 "SpecialPrice End": 1,
@@ -68,9 +113,9 @@ const getAllPStock = (query) => __awaiter(void 0, void 0, void 0, function* () {
                 "Shop SKU": 1,
                 "currenczyCode": 1,
                 "SpecialPrice": 1,
-                // Bring the image from basic collection to the top level
                 "images": "$basicInfo.*Product Images1",
                 "description": "$basicInfo.Main Description"
+                // ... add other fields as needed
             }
         }
     ]);
