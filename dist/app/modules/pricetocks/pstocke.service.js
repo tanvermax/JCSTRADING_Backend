@@ -21,14 +21,15 @@ var __rest = (this && this.__rest) || function (s, e) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.pstockService = void 0;
-const mongoose_1 = require("mongoose");
 const pricestock_model_1 = require("./pricestock.model");
+const product_model_1 = require("../product/product.model");
+const mongoose_1 = require("mongoose");
 const getAllPStock = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const { page: queryPage, limit: queryLimit, search, category } = query, filterData = __rest(query, ["page", "limit", "search", "category"]);
     const page = Number(queryPage) || 1;
-    const limit = Number(queryLimit) || 20;
+    const limit = Number(queryLimit) || 1420;
     const skip = (page - 1) * limit;
-    const searchCondition = search
+    const searchConditionPriceStock = search
         ? { "*Product Name(English)": { $regex: search, $options: "i" } }
         : {};
     // --- CATEGORY FILTER LOGIC ---
@@ -42,11 +43,39 @@ const getAllPStock = (query) => __awaiter(void 0, void 0, void 0, function* () {
         categoryCondition = { "*Product Name(English)": { $regex: /cat|kitten/i } };
     }
     // Add other categories here...
+    const searchConditionProduct = search
+        ? { "title": { $regex: search, $options: "i" } }
+        : {};
     const product = yield pricestock_model_1.PriceStockModel.aggregate([
         {
-            $match: Object.assign(Object.assign(Object.assign({}, filterData), searchCondition), categoryCondition // Apply the filter here
+            $match: Object.assign(Object.assign(Object.assign({}, filterData), searchConditionPriceStock), categoryCondition // Apply the filter here
             )
         },
+        {
+            $unionWith: {
+                coll: "products", // Ensure this matches your actual DB collection name
+                pipeline: [
+                    { $match: searchConditionProduct },
+                    {
+                        // MAP PRODUCT FIELDS TO PRICE-STOCK FIELDS
+                        $project: {
+                            _id: 1,
+                            "Product ID": { $literal: null }, // Products might not have a numeric ID yet
+                            "*Product Name(English)": "$title",
+                            "Product Name(Bengali) look function": { $literal: "" },
+                            "*Price": "$price",
+                            "*Quantity": "$stock",
+                            "Shop SKU": "$sku",
+                            "category": "$category",
+                            "images": "$images",
+                            "description": "$description",
+                            "sortOrder": { $literal: 1 } // TOP PRIORITY
+                        }
+                    }
+                ]
+            }
+        },
+        { $sort: { sortOrder: 1, createdAt: -1 } },
         { $skip: skip },
         { $limit: limit }, // পরবর্তী ২০টি ডাটা নিবে
         {
@@ -119,11 +148,12 @@ const getAllPStock = (query) => __awaiter(void 0, void 0, void 0, function* () {
             }
         }
     ]);
-    const totalProduct = yield pricestock_model_1.PriceStockModel.countDocuments(Object.assign(Object.assign({}, filterData), searchCondition));
+    const count2 = yield product_model_1.Product.countDocuments(searchConditionProduct);
+    const totalProduct = yield pricestock_model_1.PriceStockModel.countDocuments(Object.assign(Object.assign({}, filterData), searchConditionPriceStock));
     return {
         data: product,
         meta: {
-            total: totalProduct,
+            total: count2 + totalProduct,
             page,
             limit
         }
