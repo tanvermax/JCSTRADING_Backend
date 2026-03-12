@@ -3,34 +3,39 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PriceStockModel = void 0;
 const mongoose_1 = require("mongoose");
 const PriceStockSchema = new mongoose_1.Schema({
-    // _id: { type: String },
     "Product ID": { type: Number, required: true },
-    "catId": { type: Number, required: true },
+    "catId": { type: Number }, // Removed required if not always available from front-end
     "*Product Name(English)": { type: String, required: true },
     "Product Name(Bengali) look function": { type: String },
     "currencyCode": { type: String, default: 'BDT' },
     "SpecialPrice": { type: Number },
-    "sku": {
-        "skuId": { type: Number }
-    },
+    "SpecialPrice Start": { type: String },
+    "SpecialPrice End": { type: String },
     "status": {
         type: String,
         enum: ['active', 'inactive'],
         default: 'active'
     },
-    "SpecialPrice Start": { type: String },
-    "SpecialPrice End": { type: String },
-    "Highlights": { type: String },
     "Shop SKU": { type: String, required: true },
     "SellerSKU": { type: String },
     "*Quantity": { type: Number, required: true, min: 0 },
     "*Price": { type: Number, required: true, min: 0 },
-    "Variations Combo": { type: String },
+    "description": { type: String },
+    "Highlights": { type: String },
+    "images": { type: String }, // Primary Image URL
+    "White Background Image": { type: String },
+    "images2": { type: String },
+    "images3": { type: String },
+    "images4": { type: String },
+    "images5": { type: String },
+    "image6": { type: String },
+    "sku": {
+        "skuId": { type: Number }
+    },
     "tr(s-wb-product@md5key)": { type: String }
 }, {
-    timestamps: true, // Automatically adds createdAt and updatedAt
-    collection: 'pricestock' // Explicitly setting collection name
+    timestamps: true,
+    collection: 'pricestock'
 });
-// Create index for faster searching by SKU or Product ID
 PriceStockSchema.index({ "Shop SKU": 1, "Product ID": 1 });
 exports.PriceStockModel = (0, mongoose_1.model)('PriceStock', PriceStockSchema);

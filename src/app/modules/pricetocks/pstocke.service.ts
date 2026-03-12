@@ -1,8 +1,11 @@
+import httpStatus from 'http-status-codes';
 
 
 import { PriceStockModel } from "./pricestock.model";
 import { Product } from "../product/product.model";
 import { Types } from "mongoose";
+import AppError from "../../errorHelper/AppError";
+import { IPriceStockRaw } from './pricestock.interface';
 
 
 
@@ -54,6 +57,7 @@ const getAllPStock = async (query: Record<string, string>) => {
                             "Product Name(Bengali) look function": { $literal: "" },
                             "*Price": "$price",
                             "*Quantity": "$stock",
+                            "Highlights":"$Highlights",
                             "Shop SKU": "$sku",
                             "category": "$category",
                             "images": "$images",
@@ -83,58 +87,47 @@ const getAllPStock = async (query: Record<string, string>) => {
         },
 
         {
-            // 4. Clean up the output to match what your Frontend needs
             $project: {
                 _id: 1,
                 "Product ID": 1,
                 "*Product Name(English)": 1,
-                "Product Name(Bengali) look function": "$basicInfo.Product Name(Bengali) look function",
-                // --- NEW CATEGORIZATION LOGIC ---
+                "Product Name(Bengali) look function": {
+                    $ifNull: ["$basicInfo.Product Name(Bengali) look function", "$Product Name(Bengali) look function"]
+                },
                 "category": {
                     $switch: {
                         branches: [
-                            {
-                                case: { $regexMatch: { input: "$*Product Name(English)", regex: /cat|kitten|feline/i } },
-                                then: "Pet Supplies"
-                            },
-                            {
-                                case: { $regexMatch: { input: "$*Product Name(English)", regex: /car|auto|bmw|vehicle|wheel/i } },
-                                then: "Automotive"
-                            },
-                            {
-                                case: {
-                                    $and: [
-                                        { $not: { $regexMatch: { input: "$*Product Name(English)", regex: /steering|car/i } } }, // Must NOT match
-                                        // { $regexMatch: { input: "$*Product Name(English)", regex: /computer|mouse|wheel/i } } // Must match
-                                    ]
-                                },
-                                then: "other"
-                            },
-                            {
-                                case: {
-                                    //  $regexMatch: { input: "$*Product Name(English)", regex: /guitar|acoustic|strum|strings/i }
-                                    $and: [
-                                        { $regexMatch: { input: "$*Product Name(English)", regex: /guitar|acoustic|strum|strings/i } },
-                                        { $not: { $regexMatch: { input: "$*Product Name(English)", regex: /Keyring|Keychain|car/i } } }
-                                    ]
-                                },
-                                then: "Musical Instruments"
-                            }
+                            { case: { $regexMatch: { input: "$*Product Name(English)", regex: /cat|kitten/i } }, then: "Pet Supplies" },
+                            { case: { $regexMatch: { input: "$*Product Name(English)", regex: /car|auto/i } }, then: "Automotive" },
+                            { case: { $regexMatch: { input: "$*Product Name(English)", regex: /guitar/i } }, then: "Musical Instruments" }
                         ],
                         default: "Uncategorized"
                     }
                 },
-                // --- END OF NEW LOGIC ---
                 "*Price": 1,
-                "SpecialPrice Start": 1,
-                "SpecialPrice End": 1,
                 "*Quantity": 1,
                 "Shop SKU": 1,
-                "currenczyCode": 1,
                 "SpecialPrice": 1,
-                "images": "$basicInfo.*Product Images1",
-                "description": "$basicInfo.Main Description"
-                // ... add other fields as needed
+                
+
+                // --- IMPROVED IMAGE LOGIC ---
+                // 1. Try to get image from basicInfo (besic collection)
+                // 2. If null, try to get it from the main document (images field)
+                // 3. If still null, return a placeholder
+                "images": {
+                    $ifNull: ["$basicInfo.*Product Images1", "$images", "/placeholder.png"]
+                },
+                "Highlights":{
+                    $ifNull: ["$basicInfo.Highlights", "$Highlights", "no highlight"]
+                },
+
+                // --- IMPROVED DESCRIPTION LOGIC ---
+                "description": {
+                    $ifNull: ["$basicInfo.Main Description", "$description", "No description available"]
+                },
+
+                "SpecialPrice Start": 1,
+                "SpecialPrice End": 1
             }
         }
     ]);
@@ -215,6 +208,49 @@ const getSinglePStock = async (id: string) => {
     // Aggregate returns an array, so we return the first item
     return result;
 };
+
+
+
+
+const createPricestock = async (payload: IPriceStockRaw) => {
+
+    const ISProductExit = await PriceStockModel.findOne({
+        "Product ID": payload["Product ID"]
+    });
+
+
+    console.log("ISProductExit", ISProductExit);
+
+
+    if (ISProductExit) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Product alredy exit in")
+    }
+
+    const productIdstrng = String(payload["Product ID"])
+
+    const baseSlug = productIdstrng.toLocaleLowerCase().split(" ").join("-");
+    let counter = 0;
+    let slug = `${baseSlug}-product`;
+
+    while (await PriceStockModel.exists({ slug })) {
+        slug = `${baseSlug}-product-${counter++}`;
+    }
+
+
+
+    const productData = { ...payload, slug };
+
+
+    console.log("final-payload", productData);
+
+
+    const product = PriceStockModel.create(productData)
+    return product;
+
+}
+
+
+
 export const pstockService = {
-    getAllPStock, getSinglePStock
+    getAllPStock, getSinglePStock, createPricestock
 }

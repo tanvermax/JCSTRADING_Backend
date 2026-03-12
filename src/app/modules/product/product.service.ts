@@ -12,7 +12,7 @@ import { PriceStockModel } from '../pricetocks/pricestock.model';
 
 
 const createProduct = async (payload: IProduct) => {
-    const ISProductExit = await Product.findOne({ title: payload.title });
+    const ISProductExit = await PriceStockModel.findOne({ title: payload.title });
     console.log(ISProductExit)
     if (ISProductExit) {
         throw new AppError(httpStatus.BAD_REQUEST, "Product alredy exit in")

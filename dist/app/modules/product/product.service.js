@@ -21,7 +21,7 @@ const cloudinary_config_1 = require("../../config/cloudinary.config");
 const order_model_1 = require("../order/order.model");
 const pricestock_model_1 = require("../pricetocks/pricestock.model");
 const createProduct = (payload) => __awaiter(void 0, void 0, void 0, function* () {
-    const ISProductExit = yield product_model_1.Product.findOne({ title: payload.title });
+    const ISProductExit = yield pricestock_model_1.PriceStockModel.findOne({ title: payload.title });
     console.log(ISProductExit);
     if (ISProductExit) {
         throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Product alredy exit in");

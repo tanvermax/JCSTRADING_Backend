@@ -1,3 +1,5 @@
+import { PriceStockModel } from './pricestock.model';
+
 // import  httpStatus from 'http-status-codes';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -5,7 +7,9 @@ import { Request, Response, NextFunction } from "express";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendresponse";
 import { pstockService } from "./pstocke.service";
-import { PriceStockModel } from "./pricestock.model";
+
+import AppError from "../../errorHelper/AppError";
+import { deleteImageForCloudinary } from '../../config/cloudinary.config';
 // import AppError from "../../errorHelper/AppError";
 
 
@@ -54,8 +58,48 @@ const getSinglePStock = catchAsync(async (req: Request, res: Response, next: Nex
     });
 });
 
+const creatPricestok = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+
+   let parsedData;
+    try {
+        parsedData = typeof req.body.data === 'string' 
+            ? JSON.parse(req.body.data) 
+            : req.body;
+    } catch (error) {
+        throw new AppError(400, "Invalid JSON data format");
+    }
+
+    console.log("parsedData", parsedData)
+
+    // 2. Check for the image
+    if (!req.file?.path) {
+        throw new AppError(400, "Image upload failed");
+    }
+   const finalPayload = {
+        ...parsedData,
+        images: req.file.path // Setting the primary image URL from Cloudinary/Multer
+    };
+
+    // 4. Call the service (Removed 'new' keyword)
+    const product = await pstockService.createPricestock(finalPayload);
+
+    console.log("product", product)
+    
+   if (!product) {
+        // Clean up Cloudinary file if DB operation failed
+        await deleteImageForCloudinary(req.file.path);
+        throw new AppError(500, "Failed to create product in database");
+    }
+    sendResponse(res, {
+
+        statusCode: 201,
+        message: "product created successfully",
+        success: true,
+        data: product,
+    })
+})
 
 export const PstokesController = {
-    getAllPstokes, getSinglePStock
+    getAllPstokes, getSinglePStock,creatPricestok
 
 }
