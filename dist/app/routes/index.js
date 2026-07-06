@@ -6,22 +6,20 @@ const express_1 = require("express");
 const auth_routs_1 = require("../modules/auth/auth.routs");
 const user_route_1 = require("../modules/user/user.route");
 const transaction_route_1 = require("../modules/transaction/transaction.route");
-const agent_route_1 = require("../modules/agent/agent.route");
 const admin_routs_1 = require("../modules/admin/admin.routs");
-const product_route_1 = require("../modules/product/product.route");
 const otp_routs_1 = require("../modules/otp/otp.routs");
 const sku_route_1 = require("../modules/sku/sku.route");
-const pstocks_route_1 = require("../modules/pricetocks/pstocks.route");
+const alldata_route_1 = require("../modules/alldata/alldata.route");
 exports.router = (0, express_1.Router)();
 const moduleRoutes = [
     {
         path: "/user",
         route: user_route_1.UserRoutes
     },
-    {
-        path: "/agent",
-        route: agent_route_1.AgentRouter
-    },
+    // {
+    //     path: "/agent",
+    //     route: AgentRouter
+    // },
     {
         path: "/auth",
         route: auth_routs_1.AuthRoute
@@ -34,9 +32,13 @@ const moduleRoutes = [
         path: "/admin",
         route: admin_routs_1.AdminRouter
     },
+    // {
+    //     path: "/product",
+    //     route: ProductRoute
+    // },
     {
-        path: "/product",
-        route: product_route_1.ProductRoute
+        path: "/alldata",
+        route: alldata_route_1.AlldataRoute
     },
     {
         path: "/otp",
@@ -50,10 +52,10 @@ const moduleRoutes = [
         path: "/order",
         route: OrderCart_route_1.OrderRoute
     },
-    {
-        path: "/pricestocks",
-        route: pstocks_route_1.PriceStocks
-    }
+    // {
+    //     path: "/pricestocks",
+    //     route:PriceStocks
+    // }
 ];
 moduleRoutes.forEach((route) => {
     {

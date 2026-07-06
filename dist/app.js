@@ -15,11 +15,14 @@ app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cors_1.default)({
     origin: [
+        "http://jcstradingbd.com",
         "https://jcstradingbd.com",
-        "https://jcstrading.vercel.app",
+        // "https://jcstrading.vercel.app",
+        "http://localhost:5000",
         "http://localhost:3000"
     ],
-    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    credentials: true
 }));
 app.options("/", (0, cors_1.default)());
 app.use((0, cookie_parser_1.default)());
