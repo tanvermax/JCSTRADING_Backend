@@ -74,6 +74,7 @@ const getAllOrder = async (query: Record<string, string>, userId: string) => {
 }
 
 
+
 const updateOrder = async (orderId: string, quantity: number, productId: string) => {
 
     // const { productId, quantity } = body;
@@ -175,6 +176,8 @@ const ConfirmOrdernonuser = async (updatedData: any) => {
     return result;
 };
 
+
+
 const DeleteOrder = async (orderId: string, userId: string, productId: string) => {
 
     const order = await OrderModel.findOne({ _id: orderId, userId: userId });
@@ -214,6 +217,7 @@ const DeleteOrder = async (orderId: string, userId: string, productId: string) =
     return updatedOrder;
 };
 
+
 const ConfirmAdminOrder = async (id: string, status: string, trackingId: string, courierName: string) => {
 
     // Clean the items array: Remove the 'guest_...' IDs and extra UI fields
@@ -233,6 +237,7 @@ const ConfirmAdminOrder = async (id: string, status: string, trackingId: string,
 
     return updatedOrder;
 };
+
 
 const getAllOrderForAdmin = async (query: Record<string, string>) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

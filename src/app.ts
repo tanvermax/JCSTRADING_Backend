@@ -17,9 +17,10 @@ app.use(cors({
      "http://jcstradingbd.com",
     "https://jcstradingbd.com",
     // "https://jcstrading.vercel.app",
-    // "http://localhost:3000"
+    "http://localhost:5000",
+    "http://localhost:3000"
   ],
-   methods: ["GET", "POST"],
+   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"  ],
     credentials: true
 
 }));

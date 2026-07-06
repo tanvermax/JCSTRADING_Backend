@@ -9,6 +9,7 @@ import { ProductRoute } from "../modules/product/product.route";
 import { OtpRouter } from "../modules/otp/otp.routs";
 import { SkuRouter } from "../modules/sku/sku.route";
 import { PriceStocks } from '../modules/pricetocks/pstocks.route';
+import { AlldataRoute } from '../modules/alldata/alldata.route';
 
 export const router = Router();
 
@@ -17,10 +18,10 @@ const moduleRoutes = [
         path: "/user",
         route: UserRoutes
     },
-    {
-        path: "/agent",
-        route: AgentRouter
-    },
+    // {
+    //     path: "/agent",
+    //     route: AgentRouter
+    // },
     {
         path: "/auth",
         route: AuthRoute
@@ -33,9 +34,13 @@ const moduleRoutes = [
         path: "/admin",
         route: AdminRouter
     },
+    // {
+    //     path: "/product",
+    //     route: ProductRoute
+    // },
     {
-        path: "/product",
-        route: ProductRoute
+        path: "/alldata",
+        route: AlldataRoute
     },
     {
         path: "/otp",
@@ -49,10 +54,10 @@ const moduleRoutes = [
         path: "/order",
         route:OrderRoute
     },
-    {
-        path: "/pricestocks",
-        route:PriceStocks
-    }
+    // {
+    //     path: "/pricestocks",
+    //     route:PriceStocks
+    // }
 ]
 
 
