@@ -34,10 +34,10 @@ const moduleRoutes = [
         path: "/admin",
         route: AdminRouter
     },
-    // {
-    //     path: "/product",
-    //     route: ProductRoute
-    // },
+    {
+        path: "/product",
+        route: ProductRoute
+    },
     {
         path: "/alldata",
         route: AlldataRoute
