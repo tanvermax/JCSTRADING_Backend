@@ -37,7 +37,7 @@ const getAllPstokes = catchAsync(async (req: Request, res: Response, next: NextF
 const getSinglePStock = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const  {id}  = req.params;
 
-    console.log("id", id)
+    // console.log("id", id)
 
     const productfound = await PriceStockModel.findById(id);
     

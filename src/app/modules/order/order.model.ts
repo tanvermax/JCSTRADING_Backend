@@ -7,7 +7,7 @@ const orderSchema = new Schema<TOrder>({
   orderedItems: [
     {
       _id:false,
-      product: { type: Schema.Types.ObjectId, ref: 'PriceStock', required: true },
+      product: { type: String, ref: 'Alldata', required: true },
       quantity: { type: Number, required: true },
       price: { type: Number, required: true }
     }

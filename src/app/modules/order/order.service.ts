@@ -8,62 +8,57 @@ const getAllOrder = async (query: Record<string, string>, userId: string) => {
     const filter: any = {};
     if (userId) filter.userId = new Types.ObjectId(userId);
 
-    // Add other query filters if necessary (e.g. status: 'Pending')
     if (query.status) filter.status = query.status;
 
     const orders = await OrderModel.aggregate([
+        // ১. ইউজারের আইডি অনুযায়ী ফিল্টার করা
         { $match: filter },
+        
+        // ২. orderedItems অ্যারে ভাঙা
         { $unwind: "$orderedItems" },
-        // 1. Join with pricestock
+        
+        // ৩. মাত্র ১টি সাধারণ lookup (সরাসরি alldata কালেকশন থেকে)
         {
             $lookup: {
-                from: "pricestock",
-                localField: "orderedItems.product",
-                foreignField: "_id",
+                from: "alldata",               // কালেকশনের নাম
+                localField: "orderedItems.product", // অর্ডারের স্ট্রিং আইডি ("246488514")
+                foreignField: "_id",           // alldata কালেকশনের স্ট্রিং _id
                 as: "productDetails"
             }
         },
-        { $unwind: "$productDetails" },
-        // 2. Join with besic collection
-        {
-            $lookup: {
-                from: "besic",
-                localField: "productDetails.Product ID",
-                foreignField: "Product ID",
-                as: "basicInfo"
-            }
-        },
-        { $unwind: { path: "$basicInfo", preserveNullAndEmptyArrays: true } },
-        // 3. FIX: Use $mergeObjects to combine product details with basic info
+        
+        // ৪. lookup এর রেজাল্ট অবজেক্টে রূপান্তর করা
+        { $unwind: { path: "$productDetails", preserveNullAndEmptyArrays: true } },
+        
+        // ৫. ফ্রন্টএন্ডের রিকোয়ারমেন্ট অনুযায়ী orderedItems.product ফিল্ড রি-শেপ (Re-shape) করা
         {
             $addFields: {
                 "orderedItems.product": {
-                    $mergeObjects: [
-                        "$productDetails",
-                        {
-                            images: "$basicInfo.*Product Images1",
-                            highlights: "$basicInfo.Highlights"
-                        }
-                    ]
+                    _id: "$productDetails._id",
+                    name: "$productDetails.name",
+                    images: ["$productDetails.mainImage"], // ফ্রন্টএন্ড যদি ইমেজ অ্যারে চায়
+                    category: "$productDetails.category"
                 }
             }
         },
-        // 4. Group back into the original order structure
+        
+        // ৬. আনওয়াইন্ড করা orderedItems গুলোকে আবার আগের মতো গ্রুপ করা
         {
             $group: {
                 _id: "$_id",
                 userId: { $first: "$userId" },
                 orderedItems: { $push: "$orderedItems" },
                 totalPrice: { $first: "$totalPrice" },
+                grandTotal: { $first: "$grandTotal" },
                 status: { $first: "$status" },
                 paymentStatus: { $first: "$paymentStatus" },
-                createdAt: { $first: "$createdAt" },
-                updatedAt: { $first: "$updatedAt" },
-                // Include other fields if your schema has them
                 shippingAddress: { $first: "$shippingAddress" },
-                grandTotal: { $first: "$grandTotal" }
+                createdAt: { $first: "$createdAt" },
+                updatedAt: { $first: "$updatedAt" }
             }
         },
+        
+        // ৭. লেটেস্ট অর্ডার অনুযায়ী সর্ট করা
         { $sort: { createdAt: -1 } }
     ]);
 
@@ -71,7 +66,7 @@ const getAllOrder = async (query: Record<string, string>, userId: string) => {
         data: orders,
         meta: { total: orders.length }
     };
-}
+};
 
 
 
@@ -241,64 +236,38 @@ const ConfirmAdminOrder = async (id: string, status: string, trackingId: string,
 
 const getAllOrderForAdmin = async (query: Record<string, string>) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-   const filter: any = {};
+    const filter: any = {};
     if (query.status) filter.status = query.status;
 
     const orders = await OrderModel.aggregate([
         { $match: filter },
-        {
-            $unwind: {
-                path: "$orderedItems",
-                preserveNullAndEmptyArrays: true
-            }
-        },
+        { $unwind: { path: "$orderedItems", preserveNullAndEmptyArrays: true } },
         {
             $lookup: {
-                from: "pricestock", 
+                from: "alldata", // নিশ্চিত হয়ে নিন কালেকশন নেম ঠিক আছে কিনা
                 localField: "orderedItems.product",
                 foreignField: "_id",
                 as: "productDetails"
             }
         },
-        { 
-            $unwind: { 
-                path: "$productDetails", 
-                preserveNullAndEmptyArrays: true 
-            } 
-        },
-        // 4. Lookup basic info
+        { $unwind: { path: "$productDetails", preserveNullAndEmptyArrays: true } },
         {
-            $lookup: {
-                from: "besic", 
-                localField: "productDetails.Product ID",
-                foreignField: "Product ID",
-                as: "basicInfo"
-            }
-        },
-       { $unwind: { path: "$basicInfo", preserveNullAndEmptyArrays: true } },
-        // 5. Build the product object safely
-      {
             $addFields: {
                 "orderedItems.product": {
                     $cond: {
-                        // Check if productDetails exists as an object
                         if: { $ifNull: ["$productDetails", false] },
                         then: {
-                            $mergeObjects: [
-                                "$productDetails",
-                                {
-                                    images: "$basicInfo.*Product Images1",
-                                    productName: "$basicInfo.*Product Name(English)"
-                                }
-                            ]
+                            _id: "$productDetails._id",
+                            name: "$productDetails.name",
+                            productName: "$productDetails.name",
+                            images: ["$productDetails.mainImage"],
+                            mainImage: "$productDetails.mainImage"
                         },
-                        else: "$orderedItems.product" // Keep original if no lookup match
+                        else: "$orderedItems.product"
                     }
                 }
             }
         },
-
-        // 6. Group back together
         {
             $group: {
                 _id: "$_id",
@@ -306,34 +275,24 @@ const getAllOrderForAdmin = async (query: Record<string, string>) => {
                 totalPrice: { $first: "$totalPrice" },
                 grandTotal: { $first: "$grandTotal" },
                 status: { $first: "$status" },
-                courierName:{$first:"$courierName"},
-                trackingId:{$first:"$trackingId"},
+                courierName: { $first: "$courierName" },
+                trackingId: { $first: "$trackingId" },
                 paymentStatus: { $first: "$paymentStatus" },
                 shippingAddress: { $first: "$shippingAddress" },
                 createdAt: { $first: "$createdAt" },
                 updatedAt: { $first: "$updatedAt" }
             }
         },
-       {
-            $addFields: {
-                orderedItems: {
-                    $filter: {
-                        input: "$orderedItems",
-                        as: "item",
-                        cond: { $ne: ["$$item", {}] }
-                    }
-                }
-            }
-        },
         { $sort: { createdAt: -1 } }
     ]);
-   
 
     return {
         data: orders,
         meta: { total: orders.length }
     };
-}
+};
+
+
 export const OrderService = {
     getAllOrder, updateOrder, getAllOrderForAdmin, ConfirmAdminOrder, ConfirmOrder, ConfirmOrdernonuser, DeleteOrder
 }

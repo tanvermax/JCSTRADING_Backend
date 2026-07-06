@@ -22,62 +22,51 @@ const getAllOrder = (query, userId) => __awaiter(void 0, void 0, void 0, functio
     const filter = {};
     if (userId)
         filter.userId = new mongoose_1.Types.ObjectId(userId);
-    // Add other query filters if necessary (e.g. status: 'Pending')
     if (query.status)
         filter.status = query.status;
     const orders = yield order_model_1.OrderModel.aggregate([
+        // ১. ইউজারের আইডি অনুযায়ী ফিল্টার করা
         { $match: filter },
+        // ২. orderedItems অ্যারে ভাঙা
         { $unwind: "$orderedItems" },
-        // 1. Join with pricestock
+        // ৩. মাত্র ১টি সাধারণ lookup (সরাসরি alldata কালেকশন থেকে)
         {
             $lookup: {
-                from: "pricestock",
-                localField: "orderedItems.product",
-                foreignField: "_id",
+                from: "alldata", // কালেকশনের নাম
+                localField: "orderedItems.product", // অর্ডারের স্ট্রিং আইডি ("246488514")
+                foreignField: "_id", // alldata কালেকশনের স্ট্রিং _id
                 as: "productDetails"
             }
         },
-        { $unwind: "$productDetails" },
-        // 2. Join with besic collection
-        {
-            $lookup: {
-                from: "besic",
-                localField: "productDetails.Product ID",
-                foreignField: "Product ID",
-                as: "basicInfo"
-            }
-        },
-        { $unwind: { path: "$basicInfo", preserveNullAndEmptyArrays: true } },
-        // 3. FIX: Use $mergeObjects to combine product details with basic info
+        // ৪. lookup এর রেজাল্ট অবজেক্টে রূপান্তর করা
+        { $unwind: { path: "$productDetails", preserveNullAndEmptyArrays: true } },
+        // ৫. ফ্রন্টএন্ডের রিকোয়ারমেন্ট অনুযায়ী orderedItems.product ফিল্ড রি-শেপ (Re-shape) করা
         {
             $addFields: {
                 "orderedItems.product": {
-                    $mergeObjects: [
-                        "$productDetails",
-                        {
-                            images: "$basicInfo.*Product Images1",
-                            highlights: "$basicInfo.Highlights"
-                        }
-                    ]
+                    _id: "$productDetails._id",
+                    name: "$productDetails.name",
+                    images: ["$productDetails.mainImage"], // ফ্রন্টএন্ড যদি ইমেজ অ্যারে চায়
+                    category: "$productDetails.category"
                 }
             }
         },
-        // 4. Group back into the original order structure
+        // ৬. আনওয়াইন্ড করা orderedItems গুলোকে আবার আগের মতো গ্রুপ করা
         {
             $group: {
                 _id: "$_id",
                 userId: { $first: "$userId" },
                 orderedItems: { $push: "$orderedItems" },
                 totalPrice: { $first: "$totalPrice" },
+                grandTotal: { $first: "$grandTotal" },
                 status: { $first: "$status" },
                 paymentStatus: { $first: "$paymentStatus" },
-                createdAt: { $first: "$createdAt" },
-                updatedAt: { $first: "$updatedAt" },
-                // Include other fields if your schema has them
                 shippingAddress: { $first: "$shippingAddress" },
-                grandTotal: { $first: "$grandTotal" }
+                createdAt: { $first: "$createdAt" },
+                updatedAt: { $first: "$updatedAt" }
             }
         },
+        // ৭. লেটেস্ট অর্ডার অনুযায়ী সর্ট করা
         { $sort: { createdAt: -1 } }
     ]);
     return {
@@ -193,58 +182,33 @@ const getAllOrderForAdmin = (query) => __awaiter(void 0, void 0, void 0, functio
         filter.status = query.status;
     const orders = yield order_model_1.OrderModel.aggregate([
         { $match: filter },
-        {
-            $unwind: {
-                path: "$orderedItems",
-                preserveNullAndEmptyArrays: true
-            }
-        },
+        { $unwind: { path: "$orderedItems", preserveNullAndEmptyArrays: true } },
         {
             $lookup: {
-                from: "pricestock",
+                from: "alldata", // নিশ্চিত হয়ে নিন কালেকশন নেম ঠিক আছে কিনা
                 localField: "orderedItems.product",
                 foreignField: "_id",
                 as: "productDetails"
             }
         },
-        {
-            $unwind: {
-                path: "$productDetails",
-                preserveNullAndEmptyArrays: true
-            }
-        },
-        // 4. Lookup basic info
-        {
-            $lookup: {
-                from: "besic",
-                localField: "productDetails.Product ID",
-                foreignField: "Product ID",
-                as: "basicInfo"
-            }
-        },
-        { $unwind: { path: "$basicInfo", preserveNullAndEmptyArrays: true } },
-        // 5. Build the product object safely
+        { $unwind: { path: "$productDetails", preserveNullAndEmptyArrays: true } },
         {
             $addFields: {
                 "orderedItems.product": {
                     $cond: {
-                        // Check if productDetails exists as an object
                         if: { $ifNull: ["$productDetails", false] },
                         then: {
-                            $mergeObjects: [
-                                "$productDetails",
-                                {
-                                    images: "$basicInfo.*Product Images1",
-                                    productName: "$basicInfo.*Product Name(English)"
-                                }
-                            ]
+                            _id: "$productDetails._id",
+                            name: "$productDetails.name",
+                            productName: "$productDetails.name",
+                            images: ["$productDetails.mainImage"],
+                            mainImage: "$productDetails.mainImage"
                         },
-                        else: "$orderedItems.product" // Keep original if no lookup match
+                        else: "$orderedItems.product"
                     }
                 }
             }
         },
-        // 6. Group back together
         {
             $group: {
                 _id: "$_id",
@@ -258,17 +222,6 @@ const getAllOrderForAdmin = (query) => __awaiter(void 0, void 0, void 0, functio
                 shippingAddress: { $first: "$shippingAddress" },
                 createdAt: { $first: "$createdAt" },
                 updatedAt: { $first: "$updatedAt" }
-            }
-        },
-        {
-            $addFields: {
-                orderedItems: {
-                    $filter: {
-                        input: "$orderedItems",
-                        as: "item",
-                        cond: { $ne: ["$$item", {}] }
-                    }
-                }
             }
         },
         { $sort: { createdAt: -1 } }

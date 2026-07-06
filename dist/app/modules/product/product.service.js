@@ -20,6 +20,7 @@ const product_model_1 = require("./product.model");
 const cloudinary_config_1 = require("../../config/cloudinary.config");
 const order_model_1 = require("../order/order.model");
 const pricestock_model_1 = require("../pricetocks/pricestock.model");
+const alldata_model_1 = require("../alldata/alldata.model");
 const createProduct = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const ISProductExit = yield pricestock_model_1.PriceStockModel.findOne({ title: payload.title });
     console.log(ISProductExit);
@@ -33,7 +34,7 @@ const createProduct = (payload) => __awaiter(void 0, void 0, void 0, function* (
         slug = `${slug}-${counter++}`;
     }
     payload.slug = slug;
-    console.log(payload);
+    // console.log(payload)
     const product = product_model_1.Product.create(payload);
     return product;
 });
@@ -60,7 +61,7 @@ const updateproduct = (id, payload) => __awaiter(void 0, void 0, void 0, functio
         _id: { $ne: id }
     });
     if (dupliocateProduct) {
-        console.log(dupliocateProduct);
+        // console.log(dupliocateProduct)
         throw new Error("Product already exits");
     }
     if (payload.title) {
@@ -84,7 +85,7 @@ const deleteProduct = (id) => __awaiter(void 0, void 0, void 0, function* () {
     return null;
 });
 const getproductDetails = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log(id);
+    // console.log(id)
     const product = yield product_model_1.Product.findById({ _id: id.trim() });
     return {
         data: product
@@ -92,52 +93,56 @@ const getproductDetails = (id) => __awaiter(void 0, void 0, void 0, function* ()
 });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const addToCartIntoDB = (payload, userId) => __awaiter(void 0, void 0, void 0, function* () {
-    const { productId, quantity, } = payload;
-    console.log("productId, quantity, userId", productId, quantity, userId);
-    // 1. Fetch product - Ensure productId is a valid Hex string
-    const product = yield pricestock_model_1.PriceStockModel.findById(productId);
+    var _a;
+    const { productId, quantity } = payload;
+    // console.log("Processing Cart Input -> Product ID:", productId, "Quantity:", quantity, "User:", userId);
+    // ১. PriceStockModel এর বদলে AlldataModel দিয়ে সরাসরি স্ট্রিং _id খুঁজুন
+    // যেহেতু আপনার নতুন স্কিমায় _id নিজেই একটি কাস্টম স্ট্রিং, তাই এটি কাস্টম আইডি দিয়ে সরাসরি খুঁজবে
+    const product = yield alldata_model_1.AlldataModel.findById(productId);
+    // console.log(product);
     if (!product) {
-        throw new Error('Product not found in database');
+        throw new Error('Product not found in database with the given Daraz ID');
     }
-    // 2. Use the EXACT keys from your JSON (with the asterisks)
-    const availableQuantity = product["*Quantity"] || 0;
-    const itemPrice = product["SpecialPrice"] || product["*Price"];
-    // 1. Find if the user already has a "Pending" order (their Cart)
-    // eslint-disable-next-line prefer-const
+    // ২. স্টকের হিসাব এবং দাম নির্ধারণ করা
+    // আপনার নতুন স্কিমা অনুযায়ী মেইন অবজেক্টে totalStock এবং minPrice অথবা বিশেষ দাম আছে।
+    const availableQuantity = (_a = product.totalStock) !== null && _a !== void 0 ? _a : 0;
+    const itemPrice = product.specialPrice || product.minPrice; // ডিসকাউন্ট প্রাইস থাকলে সেটা নিবে, নয়তো মিনিমাম প্রাইস
     if (availableQuantity < quantity) {
         throw new Error('Insufficient stock available');
     }
     if (!itemPrice) {
-        throw new Error('Product price is missing or invalid');
+        throw new Error('Product price is missing or invalid in database');
     }
-    // 3. Find existing "Pending" order
+    // ৩. ইউজারের কোনো "Pending" অর্ডার/কার্ট অলরেডি তৈরি করা আছে কিনা দেখা
     const cart = yield order_model_1.OrderModel.findOne({ userId, status: 'Pending' });
     if (!cart) {
-        // 2. No cart? Create one with this item
+        // ৪. কার্ট না থাকলে একদম নতুন কার্ট তৈরি করা হচ্ছে
         return yield order_model_1.OrderModel.create({
             userId: userId,
             orderedItems: [{
-                    product: productId,
+                    product: productId, // এটি এখন স্ট্রিং আইডি হিসেবে অর্ডার মডেলে সেভ হবে
                     quantity,
-                    price: itemPrice // Use the correct price variable
+                    price: itemPrice
                 }],
             totalPrice: itemPrice * quantity,
             status: 'Pending',
         });
     }
-    // 3. Cart exists? Check if product is already in the array
-    const itemIndex = cart.orderedItems.findIndex(item => item.product.toString() === productId);
+    // ৫. কার্ট আগে থেকে থাকলে চেক করা হচ্ছে এই প্রোডাক্ট অলরেডি কার্টে আছে কিনা
+    const itemIndex = cart.orderedItems.findIndex(item => item.product.toString() === productId.toString());
     if (itemIndex > -1) {
+        // প্রোডাক্ট ইতিমধ্যে কার্টে থাকলে শুধু কোয়ান্টিটি বাড়িয়ে দেওয়া হচ্ছে
         cart.orderedItems[itemIndex].quantity += quantity;
     }
     else {
+        // নতুন প্রোডাক্ট হলে পুশ করা হচ্ছে
         cart.orderedItems.push({
             product: productId,
             quantity,
             price: itemPrice
         });
     }
-    // 4. Recalculate Total
+    // ৬. কার্টের টোটাল প্রাইস আবার হিসাব করা
     cart.totalPrice = cart.orderedItems.reduce((total, item) => total + (item.price * item.quantity), 0);
     return yield cart.save();
 });

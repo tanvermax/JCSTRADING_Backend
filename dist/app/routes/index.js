@@ -7,6 +7,7 @@ const auth_routs_1 = require("../modules/auth/auth.routs");
 const user_route_1 = require("../modules/user/user.route");
 const transaction_route_1 = require("../modules/transaction/transaction.route");
 const admin_routs_1 = require("../modules/admin/admin.routs");
+const product_route_1 = require("../modules/product/product.route");
 const otp_routs_1 = require("../modules/otp/otp.routs");
 const sku_route_1 = require("../modules/sku/sku.route");
 const alldata_route_1 = require("../modules/alldata/alldata.route");
@@ -32,10 +33,10 @@ const moduleRoutes = [
         path: "/admin",
         route: admin_routs_1.AdminRouter
     },
-    // {
-    //     path: "/product",
-    //     route: ProductRoute
-    // },
+    {
+        path: "/product",
+        route: product_route_1.ProductRoute
+    },
     {
         path: "/alldata",
         route: alldata_route_1.AlldataRoute

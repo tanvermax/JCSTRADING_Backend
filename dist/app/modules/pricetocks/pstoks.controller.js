@@ -34,7 +34,7 @@ const getAllPstokes = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter
 }));
 const getSinglePStock = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    console.log("id", id);
+    // console.log("id", id)
     const productfound = yield pricestock_model_1.PriceStockModel.findById(id);
     console.log("productfound", productfound);
     const result = yield pstocke_service_1.pstockService.getSinglePStock(id);

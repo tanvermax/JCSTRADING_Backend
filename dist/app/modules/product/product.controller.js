@@ -20,13 +20,13 @@ const AppError_1 = __importDefault(require("../../errorHelper/AppError"));
 const cloudinary_config_1 = require("../../config/cloudinary.config");
 const creatProduct = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
-    console.log(req.body);
+    // console.log(req.body)
     if (!((_a = req.file) === null || _a === void 0 ? void 0 : _a.path)) {
         throw new AppError_1.default(400, "Image upload failed");
     }
     const payload = Object.assign(Object.assign({}, req.body), { images: ((_b = req.file) === null || _b === void 0 ? void 0 : _b.path) || null });
     const product = yield product_service_1.productService.createProduct(payload);
-    console.log("product", product);
+    // console.log("product", product)
     if (!product) {
         // Clean up Cloudinary file if DB operation failed
         yield (0, cloudinary_config_1.deleteImageForCloudinary)((_c = req.file) === null || _c === void 0 ? void 0 : _c.path);
@@ -84,6 +84,7 @@ const getproductdetails = (0, catchAsync_1.catchAsync)((req, res, next) => __awa
 const order = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const decodedToken = req.user;
     // console.log("userresult", decodedToken.userId)
+    // console.log(req.body);
     const result = yield product_service_1.productService.addToCartIntoDB(req.body, decodedToken.userId);
     // console.log("product",cart)
     (0, sendresponse_1.sendResponse)(res, {

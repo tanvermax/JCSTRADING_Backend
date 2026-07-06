@@ -13,7 +13,7 @@ import { userService } from '../user/user.service';
 
 const creatProduct = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
-    console.log(req.body)
+    // console.log(req.body)
     if (!req.file?.path) {
         throw new AppError(400, "Image upload failed");
     }
@@ -24,7 +24,7 @@ const creatProduct = catchAsync(async (req: Request, res: Response, next: NextFu
 
 
     const product = await productService.createProduct(payload);
-    console.log("product", product)
+    // console.log("product", product)
     if (!product) {
         // Clean up Cloudinary file if DB operation failed
         await deleteImageForCloudinary(req.file?.path);
@@ -103,7 +103,7 @@ const order = catchAsync(async (req: Request, res: Response, next: NextFunction)
 
 
     // console.log("userresult", decodedToken.userId)
-
+// console.log(req.body);
     const result = await productService.addToCartIntoDB(req.body, decodedToken.userId);
 
     // console.log("product",cart)
