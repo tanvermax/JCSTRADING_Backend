@@ -19,17 +19,27 @@ app.use((0, cors_1.default)({
         "https://jcstradingbd.com",
         // "https://jcstrading.vercel.app",
         "http://localhost:5000",
-        "http://localhost:3000"
+        "http://localhost:3000",
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    credentials: true
+    credentials: true,
 }));
-app.options("/", (0, cors_1.default)());
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "https://jcstradingbd.com");
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,PATCH,OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    if (req.method === "OPTIONS") {
+        return res.sendStatus(200); // OPTIONS রিকোয়েস্ট আসলে সরাসরি ২০০ সাকসেস পাঠাবে
+    }
+    next();
+});
+app.options("*", (0, cors_1.default)());
 app.use((0, cookie_parser_1.default)());
 app.use("/api/v1", routes_1.router);
 app.get("/", (req, res) => {
     res.status(200).json({
-        message: "Welcome to jcs trading Database backend system"
+        message: "Welcome to jcs trading Database backend system",
     });
 });
 app.use(notFounde_1.default);
