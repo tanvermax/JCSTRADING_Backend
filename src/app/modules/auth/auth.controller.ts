@@ -57,13 +57,13 @@ const credentialsLogin = catchAsync(async (req: Request, res: Response, next: Ne
 const logout = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     res.clearCookie("accessToken", {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax"
+        secure: true,      
+        sameSite: "none"   
     })
     res.clearCookie("refreshToken", {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax"
+        secure: true,      // 👈 'false' থেকে 'true' করা হলো
+        sameSite: "none"   // 👈 'lax' থেকে 'none' করা হলো
     })
     sendResponse(res, {
         success: true,
