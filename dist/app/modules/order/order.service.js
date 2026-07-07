@@ -17,6 +17,8 @@ const http_status_codes_1 = __importDefault(require("http-status-codes"));
 const AppError_1 = __importDefault(require("../../errorHelper/AppError"));
 const order_model_1 = require("./order.model");
 const mongoose_1 = require("mongoose");
+const sendEmail_1 = require("../../utils/sendEmail");
+const user_model_1 = require("../user/user.model");
 const getAllOrder = (query, userId) => __awaiter(void 0, void 0, void 0, function* () {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filter = {};
@@ -35,8 +37,8 @@ const getAllOrder = (query, userId) => __awaiter(void 0, void 0, void 0, functio
                 from: "alldata", // কালেকশনের নাম
                 localField: "orderedItems.product", // অর্ডারের স্ট্রিং আইডি ("246488514")
                 foreignField: "_id", // alldata কালেকশনের স্ট্রিং _id
-                as: "productDetails"
-            }
+                as: "productDetails",
+            },
         },
         // ৪. lookup এর রেজাল্ট অবজেক্টে রূপান্তর করা
         { $unwind: { path: "$productDetails", preserveNullAndEmptyArrays: true } },
@@ -47,9 +49,9 @@ const getAllOrder = (query, userId) => __awaiter(void 0, void 0, void 0, functio
                     _id: "$productDetails._id",
                     name: "$productDetails.name",
                     images: ["$productDetails.mainImage"], // ফ্রন্টএন্ড যদি ইমেজ অ্যারে চায়
-                    category: "$productDetails.category"
-                }
-            }
+                    category: "$productDetails.category",
+                },
+            },
         },
         // ৬. আনওয়াইন্ড করা orderedItems গুলোকে আবার আগের মতো গ্রুপ করা
         {
@@ -63,25 +65,25 @@ const getAllOrder = (query, userId) => __awaiter(void 0, void 0, void 0, functio
                 paymentStatus: { $first: "$paymentStatus" },
                 shippingAddress: { $first: "$shippingAddress" },
                 createdAt: { $first: "$createdAt" },
-                updatedAt: { $first: "$updatedAt" }
-            }
+                updatedAt: { $first: "$updatedAt" },
+            },
         },
         // ৭. লেটেস্ট অর্ডার অনুযায়ী সর্ট করা
-        { $sort: { createdAt: -1 } }
+        { $sort: { createdAt: -1 } },
     ]);
     return {
         data: orders,
-        meta: { total: orders.length }
+        meta: { total: orders.length },
     };
 });
 const updateOrder = (orderId, quantity, productId) => __awaiter(void 0, void 0, void 0, function* () {
     // const { productId, quantity } = body;
     const updatedOrder = yield order_model_1.OrderModel.findOneAndUpdate({
         _id: orderId,
-        "orderedItems.product": productId
+        "orderedItems.product": productId,
     }, {
-        $set: { "orderedItems.$.quantity": quantity }
-    }, { new: true }).populate('orderedItems.product');
+        $set: { "orderedItems.$.quantity": quantity },
+    }, { new: true }).populate("orderedItems.product");
     // console.log("orderExists", updatedOrder)
     if (!updatedOrder) {
         throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Order not found");
@@ -95,7 +97,8 @@ const updateOrder = (orderId, quantity, productId) => __awaiter(void 0, void 0, 
     };
 });
 const ConfirmOrder = (orderId, updatedData) => __awaiter(void 0, void 0, void 0, function* () {
-    const { name, phone, address, shippingArea, grandTotal, } = updatedData;
+    const { name, phone, address, shippingArea, grandTotal } = updatedData;
+    console.log("updatedData", updatedData);
     const order = yield order_model_1.OrderModel.findById(orderId);
     if (!order) {
         throw new AppError_1.default(404, "Order not found");
@@ -103,36 +106,76 @@ const ConfirmOrder = (orderId, updatedData) => __awaiter(void 0, void 0, void 0,
     if (order.status !== "Pending") {
         throw new AppError_1.default(400, "Order already confirmed");
     }
-    //   console.log(order)
+    // 1️⃣ প্রথমে ডাটাবেজের অবজেক্টে ভ্যালুগুলো সেট করুন
     order.shippingAddress = {
-        name,
-        phone,
-        address,
-        shippingArea
+        name: name || "Anonymous User",
+        phone: Number(phone),
+        address: address || "",
+        shippingArea: shippingArea
     };
     order.grandTotal = grandTotal;
-    order.status = "Completed";
+    order.status = "Pending"; // অথবা আপনার প্রয়োজন অনুযায়ী 'Completed'
     order.paymentStatus = "Pending";
+    // 2️⃣ আগে ডাটাবেজে সেভ নিশ্চিত করুন (যাতে ইমেইল ফেইল করলেও অ্যাড্রেস সেভ থাকে)
     yield order.save();
+    // 3️⃣ ইউজার খোঁজা
+    const user = yield user_model_1.User.findById(order.userId);
+    if (!user) {
+        throw new AppError_1.default(404, "User not found");
+    }
+    console.log("hi", user);
+    // 4️⃣ ইমেইল পাঠানো (এটিকে try-catch বা .catch দিয়ে আইসোলেট করা হলো)
+    if (user.email) {
+        yield (0, sendEmail_1.sendEmail)({
+            to: user.email,
+            subject: `Your JCS Trading Order #${order._id} is Confirmed!`,
+            templateName: "orderConfirmation",
+            templateData: {
+                name: name,
+                orderId: order._id,
+                status: order.status,
+                totalPrice: order.grandTotal,
+            },
+        }).catch((err) => {
+            // ইমেইল না গেলেও যেন প্রজেক্ট ক্র্যাশ না করে, জাস্ট লগ হবে
+            console.log("Email sending failed but order saved: ", err.message);
+        });
+    }
     return order;
 });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ConfirmOrdernonuser = (updatedData) => __awaiter(void 0, void 0, void 0, function* () {
-    const { orderedItems, name, phone, address, shippingArea, grandTotal } = updatedData;
+    const { orderedItems, name, phone, address, shippingArea, grandTotal, email, } = updatedData;
     // Clean the items array: Remove the 'guest_...' IDs and extra UI fields
     const cleanedItems = orderedItems.map((item) => ({
         product: item.product,
         quantity: item.quantity,
-        price: item.price
+        price: item.price,
     }));
     const result = yield order_model_1.OrderModel.create({
+        email: email || "",
         orderedItems: cleanedItems, // Pass the cleaned array here
         totalPrice: grandTotal - (shippingArea === "inside" ? 60 : 120),
         grandTotal,
         status: "Completed",
         paymentStatus: "Pending",
-        shippingAddress: { name, phone, address, shippingArea }
+        shippingAddress: { name, phone, address, shippingArea },
     });
+    if (email) {
+        yield (0, sendEmail_1.sendEmail)({
+            to: email,
+            subject: `Your JCS Trading Guest Order #${result._id} is Placed!`,
+            templateName: "orderConfirmation",
+            templateData: {
+                name: name,
+                orderId: result._id,
+                status: result.status,
+                totalPrice: grandTotal,
+                trackingId: "",
+                courierName: "",
+            },
+        }).catch((err) => console.log("Email error: ", err.message));
+    }
     return result;
 });
 const DeleteOrder = (orderId, userId, productId) => __awaiter(void 0, void 0, void 0, function* () {
@@ -151,9 +194,8 @@ const DeleteOrder = (orderId, userId, productId) => __awaiter(void 0, void 0, vo
     // 3. Update the document: Remove the item and decrement the totalPrice
     const updatedOrder = yield order_model_1.OrderModel.findOneAndUpdate({ _id: orderId, userId: userId }, {
         $pull: { orderedItems: { product: productId } }, // Removes the object from array
-        $inc: { totalPrice: -amountToSubtract } // Subtracts the cost from totalPrice
-    }, { new: true } // Return the updated document to the frontend
-    );
+        $inc: { totalPrice: -amountToSubtract }, // Subtracts the cost from totalPrice
+    }, { new: true });
     // 4. Cleanup: If the order is now empty, you might want to delete the whole order
     if (updatedOrder && updatedOrder.orderedItems.length === 0) {
         yield order_model_1.OrderModel.findByIdAndDelete(orderId);
@@ -162,16 +204,31 @@ const DeleteOrder = (orderId, userId, productId) => __awaiter(void 0, void 0, vo
     return updatedOrder;
 });
 const ConfirmAdminOrder = (id, status, trackingId, courierName) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     // Clean the items array: Remove the 'guest_...' IDs and extra UI fields
     const updatedOrder = yield order_model_1.OrderModel.findByIdAndUpdate(id, {
         status,
         trackingId,
         courierName,
         // Note: 'updatedAt' is handled automatically by Mongoose 'timestamps: true'
-    }, { new: true, runValidators: true } // runValidators ensures enum values are checked
-    );
+    }, { new: true, runValidators: true });
     if (!updatedOrder) {
         throw new AppError_1.default(404, "Order not found");
+    }
+    if (updatedOrder.email) {
+        yield (0, sendEmail_1.sendEmail)({
+            to: updatedOrder.email,
+            subject: `JCS Trading Order #${updatedOrder._id} Update: ${status}`,
+            templateName: "orderConfirmation",
+            templateData: {
+                name: ((_a = updatedOrder.shippingAddress) === null || _a === void 0 ? void 0 : _a.name) || "Customer",
+                orderId: updatedOrder._id,
+                status: status,
+                totalPrice: updatedOrder.grandTotal || updatedOrder.totalPrice,
+                trackingId: trackingId,
+                courierName: courierName,
+            },
+        }).catch((err) => console.log("Email error: ", err.message));
     }
     return updatedOrder;
 });
@@ -188,8 +245,8 @@ const getAllOrderForAdmin = (query) => __awaiter(void 0, void 0, void 0, functio
                 from: "alldata", // নিশ্চিত হয়ে নিন কালেকশন নেম ঠিক আছে কিনা
                 localField: "orderedItems.product",
                 foreignField: "_id",
-                as: "productDetails"
-            }
+                as: "productDetails",
+            },
         },
         { $unwind: { path: "$productDetails", preserveNullAndEmptyArrays: true } },
         {
@@ -202,12 +259,12 @@ const getAllOrderForAdmin = (query) => __awaiter(void 0, void 0, void 0, functio
                             name: "$productDetails.name",
                             productName: "$productDetails.name",
                             images: ["$productDetails.mainImage"],
-                            mainImage: "$productDetails.mainImage"
+                            mainImage: "$productDetails.mainImage",
                         },
-                        else: "$orderedItems.product"
-                    }
-                }
-            }
+                        else: "$orderedItems.product",
+                    },
+                },
+            },
         },
         {
             $group: {
@@ -221,16 +278,22 @@ const getAllOrderForAdmin = (query) => __awaiter(void 0, void 0, void 0, functio
                 paymentStatus: { $first: "$paymentStatus" },
                 shippingAddress: { $first: "$shippingAddress" },
                 createdAt: { $first: "$createdAt" },
-                updatedAt: { $first: "$updatedAt" }
-            }
+                updatedAt: { $first: "$updatedAt" },
+            },
         },
-        { $sort: { createdAt: -1 } }
+        { $sort: { createdAt: -1 } },
     ]);
     return {
         data: orders,
-        meta: { total: orders.length }
+        meta: { total: orders.length },
     };
 });
 exports.OrderService = {
-    getAllOrder, updateOrder, getAllOrderForAdmin, ConfirmAdminOrder, ConfirmOrder, ConfirmOrdernonuser, DeleteOrder
+    getAllOrder,
+    updateOrder,
+    getAllOrderForAdmin,
+    ConfirmAdminOrder,
+    ConfirmOrder,
+    ConfirmOrdernonuser,
+    DeleteOrder,
 };
