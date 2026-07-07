@@ -191,7 +191,8 @@ const ConfirmOrdernonuser = async (updatedData: any) => {
     email,
   } = updatedData;
 
-  // Clean the items array: Remove the 'guest_...' IDs and extra UI fields
+  console.log("updatedData", updatedData);
+  
   const cleanedItems = orderedItems.map(
     (item: { product: string; quantity: number; price: number }) => ({
       product: item.product,
@@ -202,14 +203,15 @@ const ConfirmOrdernonuser = async (updatedData: any) => {
 
   const result = await OrderModel.create({
     email: email || "",
-    orderedItems: cleanedItems, // Pass the cleaned array here
+    orderedItems: cleanedItems,
     totalPrice: grandTotal - (shippingArea === "inside" ? 60 : 120),
     grandTotal,
-    status: "Completed",
+    status: "Pending",
     paymentStatus: "Pending",
     shippingAddress: { name, phone, address, shippingArea },
   });
 
+  // 1️⃣ কাস্টমারকে কনফার্মেশন মেইল পাঠানো (যদি ইমেইল দিয়ে থাকে)
   if (email) {
     await sendEmail({
       to: email,
@@ -223,12 +225,28 @@ const ConfirmOrdernonuser = async (updatedData: any) => {
         trackingId: "",
         courierName: "",
       },
-    }).catch((err) => console.log("Email error: ", err.message));
+    }).catch((err) => console.log("Customer Email error: ", err.message));
   }
+
+  // 2️⃣ ওয়েবসাইট ওনার/অ্যাডমিনকে প্রফেশনাল অ্যালার্ট মেইল পাঠানো (এটি সবসময় যাবে)
+  await sendEmail({
+    to: 'jcstrading2022@gmail.com', // ওনারের ইমেইল
+    subject: `🚨 New Order Alert - #${result._id} [${name}]`, // প্রফেশনাল সাবজেক্ট
+    templateName: "adminOrderAlert", // নতুন তৈরি করা EJS টেমপ্লেট
+    templateData: {
+      name: name,
+      phone: phone,
+      customerEmail: email || "Not Provided",
+      address: address,
+      shippingArea: shippingArea,
+      orderId: result._id,
+      grandTotal: grandTotal,
+      itemsCount: cleanedItems.length // কয়টা প্রোডাক্ট অর্ডার করেছে
+    },
+  }).catch((err) => console.log("Admin Email error: ", err.message));
 
   return result;
 };
-
 const DeleteOrder = async (
   orderId: string,
   userId: string,

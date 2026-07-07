@@ -146,7 +146,7 @@ const ConfirmOrder = (orderId, updatedData) => __awaiter(void 0, void 0, void 0,
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ConfirmOrdernonuser = (updatedData) => __awaiter(void 0, void 0, void 0, function* () {
     const { orderedItems, name, phone, address, shippingArea, grandTotal, email, } = updatedData;
-    // Clean the items array: Remove the 'guest_...' IDs and extra UI fields
+    console.log("updatedData", updatedData);
     const cleanedItems = orderedItems.map((item) => ({
         product: item.product,
         quantity: item.quantity,
@@ -154,13 +154,14 @@ const ConfirmOrdernonuser = (updatedData) => __awaiter(void 0, void 0, void 0, f
     }));
     const result = yield order_model_1.OrderModel.create({
         email: email || "",
-        orderedItems: cleanedItems, // Pass the cleaned array here
+        orderedItems: cleanedItems,
         totalPrice: grandTotal - (shippingArea === "inside" ? 60 : 120),
         grandTotal,
-        status: "Completed",
+        status: "Pending",
         paymentStatus: "Pending",
         shippingAddress: { name, phone, address, shippingArea },
     });
+    // 1️⃣ কাস্টমারকে কনফার্মেশন মেইল পাঠানো (যদি ইমেইল দিয়ে থাকে)
     if (email) {
         yield (0, sendEmail_1.sendEmail)({
             to: email,
@@ -174,8 +175,24 @@ const ConfirmOrdernonuser = (updatedData) => __awaiter(void 0, void 0, void 0, f
                 trackingId: "",
                 courierName: "",
             },
-        }).catch((err) => console.log("Email error: ", err.message));
+        }).catch((err) => console.log("Customer Email error: ", err.message));
     }
+    // 2️⃣ ওয়েবসাইট ওনার/অ্যাডমিনকে প্রফেশনাল অ্যালার্ট মেইল পাঠানো (এটি সবসময় যাবে)
+    yield (0, sendEmail_1.sendEmail)({
+        to: 'jcstrading2022@gmail.com', // ওনারের ইমেইল
+        subject: `🚨 New Order Alert - #${result._id} [${name}]`, // প্রফেশনাল সাবজেক্ট
+        templateName: "adminOrderAlert", // নতুন তৈরি করা EJS টেমপ্লেট
+        templateData: {
+            name: name,
+            phone: phone,
+            customerEmail: email || "Not Provided",
+            address: address,
+            shippingArea: shippingArea,
+            orderId: result._id,
+            grandTotal: grandTotal,
+            itemsCount: cleanedItems.length // কয়টা প্রোডাক্ট অর্ডার করেছে
+        },
+    }).catch((err) => console.log("Admin Email error: ", err.message));
     return result;
 });
 const DeleteOrder = (orderId, userId, productId) => __awaiter(void 0, void 0, void 0, function* () {
