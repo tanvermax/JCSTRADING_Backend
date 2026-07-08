@@ -124,6 +124,15 @@ const getAllAdminOrder = (0, catchAsync_1.catchAsync)((req, res, next) => __awai
         meta: result.meta
     });
 }));
+const getAdminDashboardStats = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield order_service_1.OrderService.getAdminDashboardStats();
+    (0, sendresponse_1.sendResponse)(res, {
+        statusCode: 200,
+        success: true,
+        message: "Admin dashboard analytical data retrieved successfully",
+        data: result,
+    });
+}));
 exports.OrderController = {
-    deleteOrder, getAllOrder, getAllAdminOrder, confirmAdminOrdernonloguser, updateOrderStatus, confirmOrder, confirmOrdernonloguser
+    deleteOrder, getAllOrder, getAdminDashboardStats, getAllAdminOrder, confirmAdminOrdernonloguser, updateOrderStatus, confirmOrder, confirmOrdernonloguser
 };

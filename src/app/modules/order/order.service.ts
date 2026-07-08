@@ -124,7 +124,7 @@ const ConfirmOrder = async (
   const { name, phone, address, shippingArea, grandTotal } = updatedData;
 
   console.log("updatedData", updatedData);
-  
+
   const order = await OrderModel.findById(orderId);
 
   if (!order) {
@@ -140,7 +140,7 @@ const ConfirmOrder = async (
     name: name || "Anonymous User",
     phone: Number(phone),
     address: address || "",
-    shippingArea: shippingArea as 'inside' | 'outside'
+    shippingArea: shippingArea as "inside" | "outside",
   };
 
   order.grandTotal = grandTotal;
@@ -148,7 +148,7 @@ const ConfirmOrder = async (
   order.paymentStatus = "Pending";
 
   // 2️⃣ আগে ডাটাবেজে সেভ নিশ্চিত করুন (যাতে ইমেইল ফেইল করলেও অ্যাড্রেস সেভ থাকে)
-  await order.save(); 
+  await order.save();
 
   // 3️⃣ ইউজার খোঁজা
   const user = await User.findById(order.userId);
@@ -169,7 +169,6 @@ const ConfirmOrder = async (
         orderId: order._id,
         status: order.status,
         totalPrice: order.grandTotal,
-        
       },
     }).catch((err) => {
       // ইমেইল না গেলেও যেন প্রজেক্ট ক্র্যাশ না করে, জাস্ট লগ হবে
@@ -192,7 +191,7 @@ const ConfirmOrdernonuser = async (updatedData: any) => {
   } = updatedData;
 
   console.log("updatedData", updatedData);
-  
+
   const cleanedItems = orderedItems.map(
     (item: { product: string; quantity: number; price: number }) => ({
       product: item.product,
@@ -230,7 +229,7 @@ const ConfirmOrdernonuser = async (updatedData: any) => {
 
   // 2️⃣ ওয়েবসাইট ওনার/অ্যাডমিনকে প্রফেশনাল অ্যালার্ট মেইল পাঠানো (এটি সবসময় যাবে)
   await sendEmail({
-    to: 'jcstrading2022@gmail.com', // ওনারের ইমেইল
+    to: "jcstrading2022@gmail.com", // ওনারের ইমেইল
     subject: `🚨 New Order Alert - #${result._id} [${name}]`, // প্রফেশনাল সাবজেক্ট
     templateName: "adminOrderAlert", // নতুন তৈরি করা EJS টেমপ্লেট
     templateData: {
@@ -241,7 +240,7 @@ const ConfirmOrdernonuser = async (updatedData: any) => {
       shippingArea: shippingArea,
       orderId: result._id,
       grandTotal: grandTotal,
-      itemsCount: cleanedItems.length // কয়টা প্রোডাক্ট অর্ডার করেছে
+      itemsCount: cleanedItems.length, // কয়টা প্রোডাক্ট অর্ডার করেছে
     },
   }).catch((err) => console.log("Admin Email error: ", err.message));
 
@@ -387,10 +386,74 @@ const getAllOrderForAdmin = async (query: Record<string, string>) => {
   };
 };
 
+const getAdminDashboardStats = async () => {
+  // ১. স্ট্যাটাস অনুযায়ী ওভারভিউ কাউন্ট এবং টোটাল রেভিনিউ জেনারেট করা
+  const statusOverview = await OrderModel.aggregate([
+    {
+      $group: {
+        _id: "$status",
+        count: { $sum: 1 },
+        totalRevenue: { $sum: { $ifNull: ["$grandTotal", "$totalPrice"] } },
+      },
+    },
+  ]);
+
+  // ২. টাইমলাইন গ্রাফ ডেটা (লাস্ট ৩০ দিনের ডেইলি সেলস ও অর্ডার ভলিউম)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const dailyOrderTimeline = await OrderModel.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: thirtyDaysAgo },
+      },
+    },
+    {
+      $group: {
+        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+        totalOrders: { $sum: 1 },
+        revenue: { $sum: { $ifNull: ["$grandTotal", "$totalPrice"] } },
+        cancelledOrders: {
+          $sum: { $cond: [{ $eq: ["$status", "Cancelled"] }, 1, 0] },
+        },
+        completedOrders: {
+          $sum: { $cond: [{ $eq: ["$status", "Completed"] }, 1, 0] },
+        },
+      },
+    },
+    { $sort: { _id: 1 } }, // ডেট অনুযায়ী ক্রমানুসারে সাজানো
+  ]);
+
+  // ফরম্যাটিং স্ট্রাকচার (ফ্রন্টএন্ড ফ্রেন্ডলি করার জন্য)
+  const stats = {
+    totalOrders: statusOverview.reduce((sum, item) => sum + item.count, 0),
+    totalRevenue: statusOverview
+      .filter((item) => item._id !== "Cancelled") // ক্যান্সেলড বাদে রেভিনিউ কাউন্ট
+      .reduce((sum, item) => sum + item.totalRevenue, 0),
+    statusCounts: {
+      Pending: statusOverview.find((i) => i._id === "Pending")?.count || 0,
+      Paid: statusOverview.find((i) => i._id === "Paid")?.count || 0,
+      Shipped: statusOverview.find((i) => i._id === "Shipped")?.count || 0,
+      Completed: statusOverview.find((i) => i._id === "Completed")?.count || 0,
+      Cancelled: statusOverview.find((i) => i._id === "Cancelled")?.count || 0,
+    },
+    graphTimeline: dailyOrderTimeline.map((item) => ({
+      date: item._id,
+      orders: item.totalOrders,
+      revenue: item.revenue,
+      cancelled: item.cancelledOrders,
+      completed: item.completedOrders,
+    })),
+  };
+
+  return stats;
+};
+
 export const OrderService = {
+  getAllOrderForAdmin,
+  getAdminDashboardStats,
   getAllOrder,
   updateOrder,
-  getAllOrderForAdmin,
   ConfirmAdminOrder,
   ConfirmOrder,
   ConfirmOrdernonuser,

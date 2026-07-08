@@ -12,6 +12,8 @@ router.patch("/:id", (0, cheakAuth_1.cheakAuth)(...Object.values(user_interface_
 router.patch("/orderconfirm/:id", (0, cheakAuth_1.cheakAuth)(...Object.values(user_interface_1.Role)), Order_controller_1.OrderController.confirmOrder);
 router.patch("/orderconfirmnonuser/:id", Order_controller_1.OrderController.confirmOrdernonloguser);
 router.delete("/:id", (0, cheakAuth_1.cheakAuth)(...Object.values(user_interface_1.Role)), Order_controller_1.OrderController.deleteOrder);
+router.get("/admin/dashboard-stats", (0, cheakAuth_1.cheakAuth)(user_interface_1.Role.ADMIN), // আপনার প্রোজেক্টের Role অনুযায়ী পাস করবেন
+Order_controller_1.OrderController.getAdminDashboardStats);
 router.get("/admin", (0, cheakAuth_1.cheakAuth)(...Object.values(user_interface_1.Role)), Order_controller_1.OrderController.getAllAdminOrder);
 router.patch("/admin/:id", Order_controller_1.OrderController.confirmAdminOrdernonloguser);
 exports.OrderRoute = router;

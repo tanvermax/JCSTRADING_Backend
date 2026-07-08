@@ -166,6 +166,19 @@ const getAllAdminOrder = catchAsync(async (req: Request, res: Response, next: Ne
 });
 
 
+const getAdminDashboardStats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const result = await OrderService.getAdminDashboardStats();
+
+    sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: "Admin dashboard analytical data retrieved successfully",
+        data: result,
+    });
+});
+
+
+
 export const OrderController = {
-    deleteOrder, getAllOrder, getAllAdminOrder, confirmAdminOrdernonloguser, updateOrderStatus, confirmOrder, confirmOrdernonloguser
+    deleteOrder, getAllOrder,getAdminDashboardStats, getAllAdminOrder, confirmAdminOrdernonloguser, updateOrderStatus, confirmOrder, confirmOrdernonloguser
 }

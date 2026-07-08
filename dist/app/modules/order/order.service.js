@@ -111,7 +111,7 @@ const ConfirmOrder = (orderId, updatedData) => __awaiter(void 0, void 0, void 0,
         name: name || "Anonymous User",
         phone: Number(phone),
         address: address || "",
-        shippingArea: shippingArea
+        shippingArea: shippingArea,
     };
     order.grandTotal = grandTotal;
     order.status = "Pending"; // অথবা আপনার প্রয়োজন অনুযায়ী 'Completed'
@@ -179,7 +179,7 @@ const ConfirmOrdernonuser = (updatedData) => __awaiter(void 0, void 0, void 0, f
     }
     // 2️⃣ ওয়েবসাইট ওনার/অ্যাডমিনকে প্রফেশনাল অ্যালার্ট মেইল পাঠানো (এটি সবসময় যাবে)
     yield (0, sendEmail_1.sendEmail)({
-        to: 'jcstrading2022@gmail.com', // ওনারের ইমেইল
+        to: "jcstrading2022@gmail.com", // ওনারের ইমেইল
         subject: `🚨 New Order Alert - #${result._id} [${name}]`, // প্রফেশনাল সাবজেক্ট
         templateName: "adminOrderAlert", // নতুন তৈরি করা EJS টেমপ্লেট
         templateData: {
@@ -190,7 +190,7 @@ const ConfirmOrdernonuser = (updatedData) => __awaiter(void 0, void 0, void 0, f
             shippingArea: shippingArea,
             orderId: result._id,
             grandTotal: grandTotal,
-            itemsCount: cleanedItems.length // কয়টা প্রোডাক্ট অর্ডার করেছে
+            itemsCount: cleanedItems.length, // কয়টা প্রোডাক্ট অর্ডার করেছে
         },
     }).catch((err) => console.log("Admin Email error: ", err.message));
     return result;
@@ -305,10 +305,70 @@ const getAllOrderForAdmin = (query) => __awaiter(void 0, void 0, void 0, functio
         meta: { total: orders.length },
     };
 });
+const getAdminDashboardStats = () => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d, _e;
+    // ১. স্ট্যাটাস অনুযায়ী ওভারভিউ কাউন্ট এবং টোটাল রেভিনিউ জেনারেট করা
+    const statusOverview = yield order_model_1.OrderModel.aggregate([
+        {
+            $group: {
+                _id: "$status",
+                count: { $sum: 1 },
+                totalRevenue: { $sum: { $ifNull: ["$grandTotal", "$totalPrice"] } },
+            },
+        },
+    ]);
+    // ২. টাইমলাইন গ্রাফ ডেটা (লাস্ট ৩০ দিনের ডেইলি সেলস ও অর্ডার ভলিউম)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const dailyOrderTimeline = yield order_model_1.OrderModel.aggregate([
+        {
+            $match: {
+                createdAt: { $gte: thirtyDaysAgo },
+            },
+        },
+        {
+            $group: {
+                _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                totalOrders: { $sum: 1 },
+                revenue: { $sum: { $ifNull: ["$grandTotal", "$totalPrice"] } },
+                cancelledOrders: {
+                    $sum: { $cond: [{ $eq: ["$status", "Cancelled"] }, 1, 0] },
+                },
+                completedOrders: {
+                    $sum: { $cond: [{ $eq: ["$status", "Completed"] }, 1, 0] },
+                },
+            },
+        },
+        { $sort: { _id: 1 } }, // ডেট অনুযায়ী ক্রমানুসারে সাজানো
+    ]);
+    // ফরম্যাটিং স্ট্রাকচার (ফ্রন্টএন্ড ফ্রেন্ডলি করার জন্য)
+    const stats = {
+        totalOrders: statusOverview.reduce((sum, item) => sum + item.count, 0),
+        totalRevenue: statusOverview
+            .filter((item) => item._id !== "Cancelled") // ক্যান্সেলড বাদে রেভিনিউ কাউন্ট
+            .reduce((sum, item) => sum + item.totalRevenue, 0),
+        statusCounts: {
+            Pending: ((_a = statusOverview.find((i) => i._id === "Pending")) === null || _a === void 0 ? void 0 : _a.count) || 0,
+            Paid: ((_b = statusOverview.find((i) => i._id === "Paid")) === null || _b === void 0 ? void 0 : _b.count) || 0,
+            Shipped: ((_c = statusOverview.find((i) => i._id === "Shipped")) === null || _c === void 0 ? void 0 : _c.count) || 0,
+            Completed: ((_d = statusOverview.find((i) => i._id === "Completed")) === null || _d === void 0 ? void 0 : _d.count) || 0,
+            Cancelled: ((_e = statusOverview.find((i) => i._id === "Cancelled")) === null || _e === void 0 ? void 0 : _e.count) || 0,
+        },
+        graphTimeline: dailyOrderTimeline.map((item) => ({
+            date: item._id,
+            orders: item.totalOrders,
+            revenue: item.revenue,
+            cancelled: item.cancelledOrders,
+            completed: item.completedOrders,
+        })),
+    };
+    return stats;
+});
 exports.OrderService = {
+    getAllOrderForAdmin,
+    getAdminDashboardStats,
     getAllOrder,
     updateOrder,
-    getAllOrderForAdmin,
     ConfirmAdminOrder,
     ConfirmOrder,
     ConfirmOrdernonuser,
