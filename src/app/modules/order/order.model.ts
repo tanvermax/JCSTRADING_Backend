@@ -40,4 +40,8 @@ const orderSchema = new Schema<TOrder>({
   timestamps: true
 });
 
+orderSchema.index({ userId: 1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ createdAt: -1 }); // কারণ আপনি রেডিমেড সর্ট করছেন -1 দিয়ে
+
 export const OrderModel = model<TOrder>('Order', orderSchema);

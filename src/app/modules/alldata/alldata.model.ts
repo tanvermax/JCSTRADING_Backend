@@ -61,8 +61,17 @@ const AlldataSchema = new Schema<IAlldata>(
   }
 );
 
-// Compound indexes for the queries the frontend actually runs
-AlldataSchema.index({ category: 1, status: 1, minPrice: 1 });
-AlldataSchema.index({ name: 'text' });
+// Alldata.model.ts ফাইলের নিচের দিকের ইনডেক্সগুলো এভাবে গুছিয়ে লিখুন:
+
+// ১. টেক্সট সার্চের জন্য শুধুমাত্র ১টি কম্বাইন্ড টেক্সট ইনডেক্স (ডুপ্লিকেটগুলো ডিলিট করুন)
+AlldataSchema.index({ name: 'text', category: 'text' });
+
+// ২. মোস্ট পাওয়ারফুল কম্পাউন্ড ইনডেক্স (যা আপনার getAllProducts কোয়েরিকে কাভার করবে)
+// এটি ক্যাটাগরি, স্ট্যাটাস, প্রাইস এবং ক্রিয়েট টাইম একসাথে ট্র্যাক রাখবে
+AlldataSchema.index({ status: 1, category: 1, minPrice: 1, createdAt: -1 });
+AlldataSchema.index({ inStock: 1, status: 1 });
+
+// ৩. অ্যাডমিন প্যানেল বা নরমাল সর্টিং এর জন্য
+AlldataSchema.index({ createdAt: -1 });
 
 export const AlldataModel = model<IAlldata>('Alldata', AlldataSchema);
